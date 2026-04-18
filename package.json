@@ -1,0 +1,39 @@
+{
+  "name": "teardrop-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the Teardrop AI agent API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "teardrop",
+    "ai",
+    "agent",
+    "sdk",
+    "sse",
+    "x402",
+    "a2a"
+  ],
+  "author": "Teardrop AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/teardrop-ai/teardrop-sdk-ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^3.1.0"
+  }
+}
