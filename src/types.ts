@@ -409,7 +409,12 @@ export interface OrgLlmConfig {
 export interface SetLlmConfigRequest {
   provider: ProviderType;
   model: string;
-  api_key?: string;
+  /**
+   * - `undefined` (omit) — preserve existing key
+   * - `null` — clear BYOK, revert to shared platform key
+   * - `string` — set a new BYOK key
+   */
+  api_key?: string | null;
   api_base?: string;
   max_tokens?: number;
   temperature?: number;

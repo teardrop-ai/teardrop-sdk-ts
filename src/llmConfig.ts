@@ -16,7 +16,9 @@ export class LlmModule {
 
   /** Create or update the org's LLM configuration. */
   async set(data: SetLlmConfigRequest): Promise<OrgLlmConfig> {
-    // Strip undefined values so the server preserves existing keys
+    // Strip `undefined` to preserve existing server-side values, but keep
+    // explicit `null` so the backend can distinguish "omit" from "clear BYOK".
+    // `JSON.stringify` preserves `null`, so no custom replacer is needed.
     const body: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(data)) {
       if (v !== undefined) body[k] = v;
