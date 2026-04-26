@@ -10,9 +10,128 @@ import {
   ValidationError,
 } from "./errors";
 
+// ── TokenManager ──────────────────────────────────────────────────────────────
+
+type CredentialParams =
+  | { email: string; secret: string }
+  | { client_id: string; client_secret: string };
+
+/**
+ * Manages JWT acquisition and silent refresh.
+ *
+ * When `credentials` are provided the manager lazily obtains a token on the
+ * first request and silently refreshes it when it is within 5 minutes of
+ * expiry (matching the Python SDK's 30-minute refresh window behaviour for
+ * the TS equivalent using 5-minute pre-expiry threshold).
+ *
+ * A shared in-flight promise prevents concurrent token fetches when multiple
+ * requests are made simultaneously while the token is stale.
+ */
+export class TokenManager {
+  private token?: string;
+  /** Unix timestamp (seconds) at which the current token expires. */
+  private expiresAt = 0;
+  /** Shared promise for an in-flight token acquisition/refresh. */
+  private refreshPromise?: Promise<void>;
+
+  constructor(
+    private readonly baseUrl: string,
+    private readonly credentials?: CredentialParams,
+    staticToken?: string,
+  ) {
+    if (staticToken) {
+      this.setToken(staticToken);
+    }
+  }
+
+  /**
+   * Return a valid token, acquiring or refreshing as needed.
+   * Returns `undefined` when no credentials and no static token were provided.
+   */
+  async getToken(): Promise<string | undefined> {
+    // No auto-refresh without stored credentials.
+    if (!this.credentials) return this.token;
+
+    const nowSec = Date.now() / 1000;
+    // Refresh when token is absent or expires within 5 minutes.
+    if (this.token && this.expiresAt - nowSec > 300) {
+      return this.token;
+    }
+
+    // Deduplicate concurrent refresh attempts.
+    if (!this.refreshPromise) {
+      this.refreshPromise = this._acquire().finally(() => {
+        this.refreshPromise = undefined;
+      });
+    }
+    await this.refreshPromise;
+    return this.token;
+  }
+
+  /** Manually set a token (e.g. after an explicit login call). */
+  setToken(token: string): void {
+    this.token = token;
+    this.expiresAt = parseJwtExp(token);
+  }
+
+  /** Synchronously return the current token without triggering a refresh. */
+  getTokenSync(): string | undefined {
+    return this.token;
+  }
+
+  private async _acquire(): Promise<void> {
+    const resp = await fetch(`${this.baseUrl}/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(this.credentials),
+    });
+
+    if (!resp.ok) {
+      let body: unknown;
+      try {
+        body = await resp.json();
+      } catch {
+        body = {};
+      }
+      const detail =
+        (body as Record<string, unknown>)?.detail ??
+        (body as Record<string, unknown>)?.error ??
+        "Token acquisition failed";
+      throw new AuthenticationError(String(detail));
+    }
+
+    const data = (await resp.json()) as { access_token: string };
+    this.setToken(data.access_token);
+  }
+}
+
+/** Decode the `exp` claim from a JWT without a library dependency. */
+function parseJwtExp(token: string): number {
+  try {
+    const payloadB64 = token.split(".")[1];
+    if (!payloadB64) return 0;
+    // Convert base64url → base64, then decode.
+    const json = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as Record<string, unknown>;
+    return typeof payload.exp === "number" ? payload.exp : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ── HttpTransport ─────────────────────────────────────────────────────────────
+
 export interface HttpTransportOptions {
   baseUrl: string;
   timeout?: number;
+  /** Email + password for auto token acquisition/refresh. */
+  email?: string;
+  secret?: string;
+  /** OAuth2 client credentials for auto token acquisition/refresh. */
+  client_id?: string;
+  client_secret?: string;
+  /** Pre-authenticated static JWT; takes precedence over credentials. */
+  token?: string;
 }
 
 /**
@@ -22,19 +141,28 @@ export interface HttpTransportOptions {
 export class HttpTransport {
   private readonly baseUrl: string;
   private readonly timeout: number;
-  private token?: string;
+  private readonly tokenManager: TokenManager;
 
   constructor(opts: HttpTransportOptions) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, "");
     this.timeout = opts.timeout ?? 120_000;
+
+    let credentials: CredentialParams | undefined;
+    if (opts.email && opts.secret) {
+      credentials = { email: opts.email, secret: opts.secret };
+    } else if (opts.client_id && opts.client_secret) {
+      credentials = { client_id: opts.client_id, client_secret: opts.client_secret };
+    }
+
+    this.tokenManager = new TokenManager(this.baseUrl, credentials, opts.token);
   }
 
   setToken(token: string): void {
-    this.token = token;
+    this.tokenManager.setToken(token);
   }
 
   getToken(): string | undefined {
-    return this.token;
+    return this.tokenManager.getTokenSync();
   }
 
   async request<T = unknown>(
@@ -61,8 +189,9 @@ export class HttpTransport {
       "Content-Type": "application/json",
       ...extraHeaders,
     };
-    if (auth && this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+    if (auth) {
+      const token = await this.tokenManager.getToken();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
     }
 
     const controller = new AbortController();
@@ -107,13 +236,14 @@ export class HttpTransport {
 
     const url = new URL(path, this.baseUrl);
 
+    const token = await this.tokenManager.getToken();
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
       ...extraHeaders,
     };
-    if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const resp = await fetch(url.toString(), {

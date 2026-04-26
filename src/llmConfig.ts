@@ -26,6 +26,18 @@ export class LlmModule {
     return this.http.request<OrgLlmConfig>("PUT", "/llm-config", { body });
   }
 
+  /**
+   * Remove the BYOK API key while preserving all other LLM config fields.
+   * Explicitly sends `api_key: null` so the backend reverts to the shared
+   * platform key. Convenience wrapper for clients that strip `null` values
+   * before JSON serialisation (mirrors Python `clear_llm_api_key()`).
+   */
+  async clearApiKey(
+    data: Omit<SetLlmConfigRequest, "api_key">,
+  ): Promise<OrgLlmConfig> {
+    return this.set({ ...data, api_key: null });
+  }
+
   /** Delete the org's custom LLM config (revert to global default). */
   async reset(): Promise<void> {
     await this.http.request("DELETE", "/llm-config");

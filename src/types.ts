@@ -8,7 +8,9 @@ export interface TokenResponse {
 }
 
 export interface JwtPayloadBase {
-  sub: string;
+  /** User ID — may be under `sub` or `user_id` depending on token generation. */
+  sub?: string;
+  user_id?: string;
   org_id: string;
   role: "admin" | "member";
   auth_method: string;
@@ -16,6 +18,12 @@ export interface JwtPayloadBase {
   iss: string;
   exp: number;
   iat: number;
+}
+
+/** Response from GET /auth/me — JWT claims plus org_name resolved from the database. */
+export interface MeResponse extends JwtPayloadBase {
+  /** Org display name; empty string for config-based client_credentials tokens with no org row. */
+  org_name: string;
 }
 
 export interface JwtPayloadSiwe extends JwtPayloadBase {
@@ -119,6 +127,23 @@ export interface DoneEvent {
   data: { run_id: string };
 }
 
+/**
+ * Emitted immediately after each TOOL_CALL_END with structured output.
+ * `data` is the parsed tool output object (or plain string for text tools).
+ * Consumers that do not need structured output can safely ignore this event.
+ */
+export interface CustomToolOutputEvent {
+  event: "Custom";
+  data: {
+    name: "TOOL_OUTPUT";
+    value: {
+      tool_call_id: string;
+      tool_name: string;
+      data: unknown;
+    };
+  };
+}
+
 export type SseEvent =
   | RunStartedEvent
   | TextMessageStartEvent
@@ -126,6 +151,7 @@ export type SseEvent =
   | TextMessageEndEvent
   | ToolCallStartEvent
   | ToolCallEndEvent
+  | CustomToolOutputEvent
   | SurfaceUpdateEvent
   | UsageSummaryEvent
   | BillingSettlementEvent
@@ -346,14 +372,15 @@ export interface UsageSummary {
 // ── Marketplace ──────────────────────────────────────────────────────────────
 
 export interface MarketplaceTool {
+  /** Qualified tool name: "{org_slug}/{tool_name}" or "platform/{tool_name}" for Teardrop built-ins. */
   name: string;
-  qualified_name: string;
   description: string;
-  marketplace_description: string | null;
   input_schema: Record<string, unknown>;
   cost_usdc: number;
-  author_org_name: string;
-  author_org_slug: string;
+  /** Author org display name (e.g. "Teardrop" for platform tools). */
+  author: string;
+  /** Author org slug (e.g. "platform" for Teardrop built-in tools). */
+  author_slug: string;
 }
 
 export interface AuthorConfig {
@@ -366,7 +393,8 @@ export interface AuthorConfig {
 export interface EarningsEntry {
   id: string;
   tool_name: string;
-  amount_usdc: number;
+  /** Total amount charged to the caller (atomic USDC). */
+  total_cost_usdc: number;
   caller_org_id: string;
   author_share_usdc: number;
   platform_share_usdc: number;
@@ -446,6 +474,10 @@ export interface ModelInfo {
   supports_tools: boolean;
   supports_streaming: boolean;
   quality_tier: number;
+  /** Model training data cutoff date (e.g. "2025-10") or "Unknown". */
+  knowledge_cutoff?: string;
+  /** Human-readable description of training cutoff (e.g. "Training data through October 2025"). */
+  training_cutoff_note?: string;
   pricing: ModelPricing;
   benchmarks: ModelRunBenchmarks | null;
 }
@@ -467,14 +499,15 @@ export interface AddTrustedAgentRequest {
 
 export interface TrustedAgent {
   id: string;
-  org_id: string;
+  /** Present on create response; absent from list response. */
+  org_id?: string;
   agent_url: string;
   label: string | null;
-  max_cost_usdc: number | null;
+  max_cost_usdc: number;
   require_x402: boolean;
   jwt_forward: boolean;
-  is_active: boolean;
-  created_at: string;
+  /** Present on list response; absent from create response. */
+  created_at?: string;
 }
 
 // ── Agent Wallets ────────────────────────────────────────────────────────────
@@ -485,6 +518,24 @@ export interface AgentWallet {
   address: string;
   network: string;
   is_active: boolean;
+  created_at: string;
+}
+
+// ── Org Credentials ─────────────────────────────────────────────────────────
+
+export interface OrgCredentialsEntry {
+  client_id: string;
+  created_at: string;
+}
+
+export interface OrgCredentialsResponse {
+  credentials: OrgCredentialsEntry[];
+}
+
+/** client_secret is returned exactly once — store it immediately. */
+export interface RegenerateCredentialsResponse {
+  client_id: string;
+  client_secret: string;
   created_at: string;
 }
 
@@ -509,6 +560,20 @@ export const MODELS_BY_PROVIDER: Record<string, string[]> = {
 
 // ── SSE Event Type Constants ─────────────────────────────────────────────────
 
+// ── Backward-compat aliases ──────────────────────────────────────────────────
+
+/** @deprecated Use `CreditBalance` instead. */
+export type BillingBalance = CreditBalance;
+/** @deprecated Use `BillingPricingResponse` instead. */
+export type PricingInfo = BillingPricingResponse;
+/** @deprecated Use `CreateOrgToolRequest` instead. */
+export type CreateCustomToolRequest = CreateOrgToolRequest;
+/** @deprecated Use `OrgTool` instead. */
+export type CustomTool = OrgTool;
+
+// ── SSE event type constants ──────────────────────────────────────────────────
+
+export const EVENT_CUSTOM = "Custom" as const;
 export const EVENT_RUN_STARTED = "RUN_STARTED" as const;
 export const EVENT_RUN_FINISHED = "RUN_FINISHED" as const;
 export const EVENT_TEXT_MSG_START = "TEXT_MESSAGE_START" as const;

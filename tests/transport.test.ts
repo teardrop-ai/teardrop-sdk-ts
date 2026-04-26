@@ -271,3 +271,166 @@ describe("HttpTransport — query params", () => {
     expect(url).not.toContain("cursor");
   });
 });
+
+// ── TokenManager ─────────────────────────────────────────────────────────────
+
+import { AuthenticationError as AuthErr } from "../src/errors";
+import { TokenManager } from "../src/transport";
+
+/** Build a minimal JWT with the given `exp` claim (HS256 signature is fake). */
+function makeJwt(exp: number): string {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+  const payload = btoa(JSON.stringify({ sub: "u1", exp }))
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+  return `${header}.${payload}.fakesig`;
+}
+
+describe("TokenManager", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns undefined when no credentials and no static token", async () => {
+    const tm = new TokenManager("http://test");
+    expect(await tm.getToken()).toBeUndefined();
+  });
+
+  it("returns static token immediately without fetching", async () => {
+    const staticToken = makeJwt(Math.floor(Date.now() / 1000) + 3600);
+    const mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+    const tm = new TokenManager("http://test", undefined, staticToken);
+    expect(await tm.getToken()).toBe(staticToken);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("acquires a token on first getToken() call with email+secret credentials", async () => {
+    const token = makeJwt(Math.floor(Date.now() / 1000) + 1800);
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ access_token: token }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const tm = new TokenManager("http://test", { email: "u@x.com", secret: "pw" });
+    const result = await tm.getToken();
+
+    expect(result).toBe(token);
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://test/token");
+    expect((opts as RequestInit).method).toBe("POST");
+  });
+
+  it("reuses a valid token without re-fetching on second call", async () => {
+    const token = makeJwt(Math.floor(Date.now() / 1000) + 1800);
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ access_token: token }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const tm = new TokenManager("http://test", { email: "u@x.com", secret: "pw" });
+    await tm.getToken();
+    await tm.getToken();
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes a token that is within 5 minutes of expiry", async () => {
+    // First token expires in 4 minutes (within 5-minute pre-expiry threshold).
+    const nearExpiryToken = makeJwt(Math.floor(Date.now() / 1000) + 240);
+    const freshToken = makeJwt(Math.floor(Date.now() / 1000) + 1800);
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: nearExpiryToken }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: freshToken }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", mockFetch);
+
+    const tm = new TokenManager("http://test", { email: "u@x.com", secret: "pw" });
+    const first = await tm.getToken();
+    // First call acquires nearExpiryToken; since it's within 5 min threshold,
+    // second call should trigger a refresh.
+    const second = await tm.getToken();
+
+    expect(first).toBe(nearExpiryToken);
+    expect(second).toBe(freshToken);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("deduplicates concurrent getToken() calls to a single fetch", async () => {
+    const token = makeJwt(Math.floor(Date.now() / 1000) + 1800);
+    let resolveAcquire!: (v: Response) => void;
+    const acquirePromise = new Promise<Response>((res) => {
+      resolveAcquire = res;
+    });
+    const mockFetch = vi.fn().mockReturnValue(acquirePromise);
+    vi.stubGlobal("fetch", mockFetch);
+
+    const tm = new TokenManager("http://test", { email: "u@x.com", secret: "pw" });
+    // Fire three concurrent requests before the first resolves.
+    const [r1, r2, r3] = await Promise.all([
+      tm.getToken().then(() => undefined),
+      tm.getToken().then(() => undefined),
+      (async () => {
+        resolveAcquire(
+          new Response(JSON.stringify({ access_token: token }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+        return tm.getToken().then(() => undefined);
+      })(),
+    ]);
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(r1).toBeUndefined(); // void — just checks it resolved
+  });
+
+  it("throws AuthenticationError when token endpoint returns 401", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ detail: "Invalid credentials" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          }),
+        ),
+    );
+
+    const tm = new TokenManager("http://test", { email: "bad@x.com", secret: "wrong" });
+    await expect(tm.getToken()).rejects.toBeInstanceOf(AuthErr);
+  });
+
+  it("setToken() / getTokenSync() work without a network call", () => {
+    const tm = new TokenManager("http://test");
+    expect(tm.getTokenSync()).toBeUndefined();
+    const token = makeJwt(Math.floor(Date.now() / 1000) + 3600);
+    tm.setToken(token);
+    expect(tm.getTokenSync()).toBe(token);
+  });
+});

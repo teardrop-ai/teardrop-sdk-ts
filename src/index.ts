@@ -6,6 +6,7 @@ export type { TeardropClientOptions } from "./client";
 export { AuthModule } from "./auth";
 export { AgentModule } from "./agent";
 export type { AgentRunOptions } from "./agent";
+export { CredentialsModule } from "./credentials";
 export { ToolsModule } from "./tools";
 export { McpModule } from "./mcp";
 export { MemoryModule } from "./memory";
@@ -17,6 +18,9 @@ export { MarketplaceModule } from "./marketplace";
 export { LlmModule } from "./llmConfig";
 export { ModelsModule } from "./models";
 export { A2AModule } from "./a2a";
+
+// Transport (TokenManager exported for advanced use)
+export { TokenManager } from "./transport";
 
 // Errors
 export {
@@ -37,6 +41,7 @@ export type {
   TokenResponse,
   JwtPayloadBase,
   JwtPayloadSiwe,
+  MeResponse,
   AgentRunRequest,
   SseEvent,
   RunStartedEvent,
@@ -45,12 +50,16 @@ export type {
   TextMessageEndEvent,
   ToolCallStartEvent,
   ToolCallEndEvent,
+  CustomToolOutputEvent,
   SurfaceUpdateEvent,
   UsageSummaryEvent,
   BillingSettlementEvent,
   RunFinishedEvent,
   ErrorEvent,
   DoneEvent,
+  OrgCredentialsEntry,
+  OrgCredentialsResponse,
+  RegenerateCredentialsResponse,
   OrgTool,
   CreateOrgToolRequest,
   UpdateOrgToolRequest,
@@ -93,11 +102,17 @@ export type {
   TrustedAgent,
   AgentWallet,
   AgentCard,
+  // Backward-compat aliases
+  BillingBalance,
+  PricingInfo,
+  CreateCustomToolRequest,
+  CustomTool,
 } from "./types";
 
 // Constants
 export {
   MODELS_BY_PROVIDER,
+  EVENT_CUSTOM,
   EVENT_RUN_STARTED,
   EVENT_RUN_FINISHED,
   EVENT_TEXT_MSG_START,

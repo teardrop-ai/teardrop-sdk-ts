@@ -1,5 +1,5 @@
 import type { HttpTransport } from "./transport";
-import type { JwtPayloadBase, TokenResponse } from "./types";
+import type { MeResponse, TokenResponse } from "./types";
 
 export class AuthModule {
   constructor(private readonly http: HttpTransport) {}
@@ -54,9 +54,9 @@ export class AuthModule {
     return data;
   }
 
-  /** Return decoded token claims for the current session. */
-  async me(): Promise<JwtPayloadBase> {
-    return this.http.request<JwtPayloadBase>("GET", "/auth/me");
+  /** Return decoded token claims for the current session, plus org_name from the database. */
+  async me(): Promise<MeResponse> {
+    return this.http.request<MeResponse>("GET", "/auth/me");
   }
 
   /** Fetch a single-use nonce for SIWE sign-in. */

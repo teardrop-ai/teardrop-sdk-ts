@@ -12,12 +12,23 @@ export class MarketplaceModule {
 
   /** Browse published marketplace tools (no auth required). */
   async catalog(params?: {
+    org_slug?: string;
+    sort?: "name" | "price_asc" | "price_desc";
     limit?: number;
-  }): Promise<{ tools: MarketplaceTool[] }> {
-    return this.http.request<{ tools: MarketplaceTool[] }>(
+    cursor?: string;
+  }): Promise<{ tools: MarketplaceTool[]; next_cursor: string | null }> {
+    return this.http.request<{ tools: MarketplaceTool[]; next_cursor: string | null }>(
       "GET",
       "/marketplace/catalog",
-      { params: { limit: params?.limit }, auth: false },
+      {
+        params: {
+          org_slug: params?.org_slug,
+          sort: params?.sort,
+          limit: params?.limit,
+          cursor: params?.cursor,
+        },
+        auth: false,
+      },
     );
   }
 
@@ -45,25 +56,42 @@ export class MarketplaceModule {
     return this.http.request("GET", "/marketplace/balance");
   }
 
-  /** Earnings history. */
-  async earnings(params?: { limit?: number }): Promise<EarningsEntry[]> {
-    return this.http.request<EarningsEntry[]>("GET", "/marketplace/earnings", {
-      params: { limit: params?.limit },
-    });
+  /** Earnings history (cursor-paginated). */
+  async earnings(params?: {
+    limit?: number;
+    tool_name?: string;
+    cursor?: string;
+  }): Promise<{ earnings: EarningsEntry[]; next_cursor: string | null }> {
+    return this.http.request<{ earnings: EarningsEntry[]; next_cursor: string | null }>(
+      "GET",
+      "/marketplace/earnings",
+      {
+        params: {
+          limit: params?.limit,
+          tool_name: params?.tool_name,
+          cursor: params?.cursor,
+        },
+      },
+    );
   }
 
   /** Request a marketplace earnings payout. */
   async withdraw(
     data: WithdrawRequest,
-  ): Promise<{ withdrawal_id: string; amount_usdc: number; status: "pending" }> {
+  ): Promise<{ id: string; org_id: string; amount_usdc: number; wallet: string; status: string; created_at: string }> {
     return this.http.request("POST", "/marketplace/withdraw", { body: data });
   }
 
-  /** Withdrawal history. */
-  async withdrawals(params?: { limit?: number }): Promise<unknown[]> {
-    return this.http.request<unknown[]>("GET", "/marketplace/withdrawals", {
-      params: { limit: params?.limit },
-    });
+  /** Withdrawal history (cursor-paginated). */
+  async withdrawals(params?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ withdrawals: unknown[]; next_cursor: string | null }> {
+    return this.http.request<{ withdrawals: unknown[]; next_cursor: string | null }>(
+      "GET",
+      "/marketplace/withdrawals",
+      { params: { limit: params?.limit, cursor: params?.cursor } },
+    );
   }
 
   /** Subscribe to a marketplace tool by qualified name (org_slug/tool_name). */

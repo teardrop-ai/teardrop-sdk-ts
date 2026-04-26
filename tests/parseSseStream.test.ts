@@ -4,9 +4,11 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  EVENT_CUSTOM,
   EVENT_DONE,
   EVENT_RUN_STARTED,
   EVENT_TEXT_MSG_CONTENT,
+  type CustomToolOutputEvent,
   type SseEvent,
 } from "../src/types";
 import {
@@ -155,6 +157,26 @@ describe("parseSseStream", () => {
     }
     // Aborted before reading — no events expected
     expect(events).toHaveLength(0);
+  });
+
+  it("parses a Custom TOOL_OUTPUT event", async () => {
+    const toolOutputValue = {
+      tool_call_id: "tc-1",
+      tool_name: "web_search",
+      data: { result: "found it" },
+    };
+    const resp = makeSSEResponse([
+      sseData("Custom", { name: "TOOL_OUTPUT", value: toolOutputValue }),
+      "",
+    ]);
+    const events = await collectAll(resp);
+    expect(events).toHaveLength(1);
+    expect(events[0].event).toBe(EVENT_CUSTOM);
+    const e = events[0] as CustomToolOutputEvent;
+    expect(e.data.name).toBe("TOOL_OUTPUT");
+    expect(e.data.value.tool_call_id).toBe("tc-1");
+    expect(e.data.value.tool_name).toBe("web_search");
+    expect(e.data.value.data).toEqual({ result: "found it" });
   });
 });
 

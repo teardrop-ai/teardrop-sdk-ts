@@ -1,6 +1,7 @@
 import { HttpTransport } from "./transport";
 import { AuthModule } from "./auth";
 import { AgentModule } from "./agent";
+import { CredentialsModule } from "./credentials";
 import { ToolsModule } from "./tools";
 import { McpModule } from "./mcp";
 import { MemoryModule } from "./memory";
@@ -17,7 +18,15 @@ import type { AgentCard } from "./types";
 export interface TeardropClientOptions {
   /** API base URL, e.g. "https://api.teardrop.dev" */
   baseUrl: string;
-  /** Pre-authenticated JWT token. */
+  /** Email for automatic token acquisition and refresh. Pair with `secret`. */
+  email?: string;
+  /** Password for automatic token acquisition and refresh. Pair with `email`. */
+  secret?: string;
+  /** OAuth2 client ID for M2M automatic token acquisition. Pair with `client_secret`. */
+  client_id?: string;
+  /** OAuth2 client secret for M2M automatic token acquisition. Pair with `client_id`. */
+  client_secret?: string;
+  /** Pre-authenticated JWT token. Takes precedence over email/secret credentials. */
   token?: string;
   /** HTTP request timeout in milliseconds (default: 120000). */
   timeout?: number;
@@ -26,11 +35,18 @@ export interface TeardropClientOptions {
 /**
  * Root client for the Teardrop API.
  *
+ * Pass `email` + `secret` (or `client_id` + `client_secret`) to enable
+ * automatic token acquisition and silent refresh. Alternatively provide a
+ * pre-authenticated `token`, or call `auth.login()` manually.
+ *
  * All resource modules are accessed as sub-namespaces:
  *
  * ```ts
- * const client = new TeardropClient({ baseUrl: "https://api.teardrop.dev" });
- * await client.auth.login({ email: "...", secret: "..." });
+ * const client = new TeardropClient({
+ *   baseUrl: "https://api.teardrop.dev",
+ *   email: "you@example.com",
+ *   secret: "your-password",
+ * });
  * for await (const event of client.agent.run({ message: "Hello!" })) { ... }
  * ```
  */
@@ -39,6 +55,7 @@ export class TeardropClient {
 
   readonly auth: AuthModule;
   readonly agent: AgentModule;
+  readonly credentials: CredentialsModule;
   readonly tools: ToolsModule;
   readonly mcp: McpModule;
   readonly memory: MemoryModule;
@@ -55,13 +72,16 @@ export class TeardropClient {
     this.http = new HttpTransport({
       baseUrl: opts.baseUrl,
       timeout: opts.timeout,
+      email: opts.email,
+      secret: opts.secret,
+      client_id: opts.client_id,
+      client_secret: opts.client_secret,
+      token: opts.token,
     });
-    if (opts.token) {
-      this.http.setToken(opts.token);
-    }
 
     this.auth = new AuthModule(this.http);
     this.agent = new AgentModule(this.http);
+    this.credentials = new CredentialsModule(this.http);
     this.tools = new ToolsModule(this.http);
     this.mcp = new McpModule(this.http);
     this.memory = new MemoryModule(this.http);
@@ -85,12 +105,35 @@ export class TeardropClient {
     return this.http.getToken();
   }
 
-  /** Fetch the A2A agent card from `/.well-known/agent-card.json`. */
+  /**
+   * Fetch the A2A agent card from `/.well-known/agent-card.json`.
+   * Result is cached for 5 minutes by the server; call this to pre-warm
+   * connectivity at startup.
+   */
   async getAgentCard(): Promise<AgentCard> {
     return this.http.request<AgentCard>(
       "GET",
       "/.well-known/agent-card.json",
       { auth: false },
     );
+  }
+
+  /**
+   * Create a client and eagerly fetch the agent card for zero-config setup.
+   * Surfaces connectivity and misconfiguration errors at construction time
+   * rather than silently on the first `agent.run()` call.
+   *
+   * ```ts
+   * const client = await TeardropClient.fromAgentCard({
+   *   baseUrl: "https://api.teardrop.dev",
+   *   email: "you@example.com",
+   *   secret: "your-password",
+   * });
+   * ```
+   */
+  static async fromAgentCard(opts: TeardropClientOptions): Promise<TeardropClient> {
+    const client = new TeardropClient(opts);
+    await client.getAgentCard();
+    return client;
   }
 }
