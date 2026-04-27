@@ -1,6 +1,6 @@
 {
   "name": "teardrop-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript SDK for the Teardrop AI agent API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
