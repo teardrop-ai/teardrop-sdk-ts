@@ -38,6 +38,8 @@ export interface AgentRunRequest {
   message: string;
   thread_id?: string;
   context?: Record<string, unknown>;
+  /** Controls whether UI surface events are emitted. Default: true. */
+  emit_ui?: boolean;
 }
 
 export interface RunStartedEvent {
@@ -167,6 +169,8 @@ export interface OrgTool {
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
+  /** Optional; omitted if not set. */
+  output_schema?: Record<string, unknown>;
   webhook_url: string;
   webhook_method: string;
   has_auth: boolean;
@@ -182,6 +186,8 @@ export interface CreateOrgToolRequest {
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
+  /** Optional JSON Schema Draft7 for response structure (for SDK type inference). */
+  output_schema?: Record<string, unknown>;
   webhook_url: string;
   webhook_method?: string;
   auth_header_name?: string;
@@ -195,6 +201,8 @@ export interface CreateOrgToolRequest {
 export interface UpdateOrgToolRequest {
   description?: string;
   input_schema?: Record<string, unknown>;
+  /** Optional JSON Schema Draft7 for response structure. */
+  output_schema?: Record<string, unknown>;
   webhook_url?: string;
   webhook_method?: string;
   auth_header_name?: string;
@@ -261,11 +269,19 @@ export interface DiscoverMcpToolsResponse {
 export interface MemoryEntry {
   id: string;
   content: string;
+  /** UUID of the run this memory was extracted from (if auto-extracted). */
+  source_run_id?: string;
   created_at: string;
 }
 
 export interface StoreMemoryRequest {
   content: string;
+}
+
+export interface MemoryListResponse {
+  memories: MemoryEntry[];
+  /** Pagination cursor; null = last page. */
+  next_cursor: string | null;
 }
 
 // ── Wallets ──────────────────────────────────────────────────────────────────

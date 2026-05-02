@@ -1,5 +1,5 @@
 import type { HttpTransport } from "./transport";
-import type { SseEvent } from "./types";
+import type { AgentRunRequest, SseEvent } from "./types";
 import { parseSseStream } from "./utils/parseSseStream";
 
 export interface AgentRunOptions {
@@ -17,7 +17,7 @@ export class AgentModule {
    * @param options - Optional signal and payment header.
    */
   async *run(
-    request: { message: string; thread_id?: string; context?: Record<string, unknown> },
+    request: AgentRunRequest,
     options: AgentRunOptions = {},
   ): AsyncIterableIterator<SseEvent> {
     const { signal, paymentHeader } = options;
@@ -30,6 +30,7 @@ export class AgentModule {
     const body: Record<string, unknown> = { message: request.message };
     if (request.thread_id) body.thread_id = request.thread_id;
     if (request.context) body.context = request.context;
+    if (request.emit_ui !== undefined) body.emit_ui = request.emit_ui;
 
     const resp = await this.http.stream("POST", "/agent/run", {
       body,

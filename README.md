@@ -274,6 +274,7 @@ for await (const event of client.agent.run({
   message: "Summarise the top DeFi news today",
   thread_id: "conv-abc123",          // optional; auto-generated if omitted
   context: { user_timezone: "Europe/Berlin" },  // optional extra context
+  emit_ui: true,                     // optional; default: true. Controls SURFACE_UPDATE emission.
 })) {
   console.log(event.event, event.data);
 }
@@ -334,6 +335,24 @@ import { collectText } from "teardrop-sdk";
 
 const text = await collectText(client.agent.run({ message: "Say hi" }));
 // → "Hi there!"
+```
+
+### Persistent Memory
+
+Semantic memory per org. Entries are automatically extracted from runs or added via API.
+
+```typescript
+// List memories with cursor pagination
+const { memories, next_cursor } = await client.memory.list({ limit: 50 });
+for (const entry of memories) {
+  console.log(`${entry.content} (from run: ${entry.source_run_id})`);
+}
+
+// Store a manual memory
+await client.memory.create({ content: "The user prefers dark mode." });
+
+// Delete a memory
+await client.memory.delete("mem-123");
 ```
 
 ## Error Handling

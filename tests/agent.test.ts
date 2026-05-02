@@ -157,6 +157,15 @@ describe("AgentModule.run — request shaping", () => {
       (opts as { body: { context: unknown } }).body.context,
     ).toEqual(ctx);
   });
+
+  it("includes emit_ui when provided", async () => {
+    vi.mocked(http.stream).mockResolvedValue(
+      makeSSEResponse([sseData(EVENT_DONE, { run_id: "r1" })]),
+    );
+    await collectAll(agent.run({ message: "Hello", emit_ui: false }));
+    const [, , opts] = vi.mocked(http.stream).mock.calls[0];
+    expect((opts as { body: { emit_ui: boolean } }).body.emit_ui).toBe(false);
+  });
 });
 
 // ── Payment header ─────────────────────────────────────────────────────────────

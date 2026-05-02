@@ -21,6 +21,7 @@ const TOOL: OrgTool = {
   name: "my_tool",
   description: "Does a thing",
   input_schema: { type: "object", properties: {}, required: [] },
+  output_schema: { type: "object", properties: { success: { type: "boolean" } } },
   webhook_url: "https://example.com/hook",
   webhook_method: "POST",
   has_auth: false,

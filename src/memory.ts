@@ -1,12 +1,15 @@
 import type { HttpTransport } from "./transport";
-import type { MemoryEntry, StoreMemoryRequest } from "./types";
+import type { MemoryEntry, MemoryListResponse, StoreMemoryRequest } from "./types";
 
 export class MemoryModule {
   constructor(private readonly http: HttpTransport) {}
 
-  async list(params?: { limit?: number }): Promise<MemoryEntry[]> {
-    return this.http.request<MemoryEntry[]>("GET", "/memories", {
-      params: { limit: params?.limit },
+  async list(params?: { limit?: number; cursor?: string }): Promise<MemoryListResponse> {
+    return this.http.request<MemoryListResponse>("GET", "/memories", {
+      params: {
+        limit: params?.limit,
+        cursor: params?.cursor,
+      },
     });
   }
 
