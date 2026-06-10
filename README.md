@@ -73,7 +73,7 @@ const tokens = await client.auth.register({
 ### Invite-based Registration
 
 ```typescript
-// Org admin creates an invite link
+// Org admin creates an invite link (roles: "member" or "user")
 const invite = await client.auth.invite({ email: "colleague@example.com", role: "member" });
 // → { token, invite_url, expires_at }
 
@@ -275,12 +275,26 @@ for await (const event of client.agent.run({
   thread_id: "conv-abc123",          // optional; auto-generated if omitted
   context: { user_timezone: "Europe/Berlin" },  // optional extra context
   emit_ui: true,                     // optional; default: true. Controls SURFACE_UPDATE emission.
+  tool_policy: {                     // optional; per-run tool exclusions
+    exclude_names: ["platform/web_search"],
+  },
 })) {
   console.log(event.event, event.data);
 }
 ```
 
 `client.agent.run()` is an async generator that yields `SseEvent` objects.
+
+### Agent Tool Inventory
+
+List all tools available to your agent, including their source and access mode.
+
+```typescript
+const tools = await client.agent.tools();
+for (const tool of tools) {
+  console.log(`${tool.name} (${tool.source}): ${tool.access_mode}`);
+}
+```
 
 **Available Tools:** The agent automatically discovers and can call:
 - Built-in Teardrop tools
@@ -307,7 +321,7 @@ try {
     )) { ... }
   }
 }
-```
+```, `cache_read_tokens` | Per-run usage & tokens
 
 ### Event Types
 
@@ -418,6 +432,7 @@ const invoice = await client.billing.invoice(runId);
 // → { run_id, tokens_in, tokens_out, tool_calls, total_usdc, settled_at }
 
 const credits = await client.billing.creditHistory({ operation: "topup" });
+// → [{ id, amount_usdc, operation, balance_usdc_after, reason, created_at }, ...]
 ```
 
 ### Stripe Top-up

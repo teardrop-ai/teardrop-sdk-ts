@@ -1,5 +1,5 @@
 import type { HttpTransport } from "./transport";
-import type { AgentRunRequest, SseEvent } from "./types";
+import type { AgentRunRequest, AgentTool, SseEvent } from "./types";
 import { parseSseStream } from "./utils/parseSseStream";
 
 export interface AgentRunOptions {
@@ -31,6 +31,7 @@ export class AgentModule {
     if (request.thread_id) body.thread_id = request.thread_id;
     if (request.context) body.context = request.context;
     if (request.emit_ui !== undefined) body.emit_ui = request.emit_ui;
+    if (request.tool_policy) body.tool_policy = request.tool_policy;
 
     const resp = await this.http.stream("POST", "/agent/run", {
       body,
@@ -39,5 +40,13 @@ export class AgentModule {
     });
 
     yield* parseSseStream(resp, signal);
+  }
+
+  /**
+   * List all tools available to the agent.
+   * Returns platform, org, and marketplace tools with their source and access mode.
+   */
+  async tools(): Promise<AgentTool[]> {
+    return this.http.request<AgentTool[]>("GET", "/agent/tools");
   }
 }

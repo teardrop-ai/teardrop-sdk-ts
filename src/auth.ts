@@ -106,7 +106,7 @@ export class AuthModule {
   /** Create org invite link. */
   async invite(params: {
     email?: string;
-    role: string;
+    role: "member" | "user";
   }): Promise<{ token: string; invite_url: string; expires_at: string }> {
     return this.http.request("POST", "/org/invite", { body: params });
   }

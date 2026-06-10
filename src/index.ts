@@ -43,6 +43,8 @@ export type {
   JwtPayloadSiwe,
   MeResponse,
   AgentRunRequest,
+  AgentTool,
+  ToolPolicy,
   SseEvent,
   RunStartedEvent,
   TextMessageStartEvent,

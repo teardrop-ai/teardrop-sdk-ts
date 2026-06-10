@@ -34,12 +34,30 @@ export interface JwtPayloadSiwe extends JwtPayloadBase {
 
 // ── Agent ────────────────────────────────────────────────────────────────────
 
+export interface ToolPolicy {
+  /** Qualified tool names to exclude from this run (e.g. "platform/web_search", "org/my_tool"). */
+  exclude_names: string[];
+}
+
 export interface AgentRunRequest {
   message: string;
   thread_id?: string;
   context?: Record<string, unknown>;
   /** Controls whether UI surface events are emitted. Default: true. */
   emit_ui?: boolean;
+  /** Per-run tool exclusions. */
+  tool_policy?: ToolPolicy;
+}
+
+export interface AgentTool {
+  /** Qualified tool name (e.g. "platform/web_search" or "org/my_tool"). */
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+  /** Origin of the tool. */
+  source: "platform" | "org" | "marketplace";
+  /** How the tool is made available to the agent. */
+  access_mode: "included" | "subscribed";
 }
 
 export interface RunStartedEvent {
@@ -99,6 +117,10 @@ export interface UsageSummaryEvent {
     cost_usdc: number;
     platform_fee_usdc: number;
     delegation_cost_usdc: number;
+    /** Cache read tokens consumed during the run. */
+    cache_read_tokens?: number;
+    /** Cache creation tokens consumed during the run. */
+    cache_creation_tokens?: number;
   };
 }
 
@@ -345,8 +367,9 @@ export interface Invoice {
 export interface CreditHistoryEntry {
   id: string;
   amount_usdc: number;
-  method: "stripe" | "usdc" | "admin";
-  reference: string | null;
+  operation: "debit" | "topup";
+  balance_usdc_after: number;
+  reason: string | null;
   created_at: string;
 }
 
