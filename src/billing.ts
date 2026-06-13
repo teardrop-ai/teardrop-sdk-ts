@@ -4,13 +4,16 @@ import type {
   BillingPricingResponse,
   CreditBalance,
   CreditHistoryEntry,
+  CreditHistoryResponse,
   Invoice,
+  InvoiceListResponse,
   StripeTopupRequest,
   StripeTopupResponse,
   StripeTopupStatusResponse,
   UsdcTopupRequest,
   UsdcTopupRequirements,
 } from "./types";
+import { parseListResponse } from "./utils/parseListResponse";
 
 export class BillingModule {
   constructor(private readonly http: HttpTransport) {}
@@ -27,18 +30,28 @@ export class BillingModule {
     return this.http.request<CreditBalance>("GET", "/billing/balance");
   }
 
-  /** Run billing history (flat array). */
+  /** Run billing history (tolerates both bare array and envelope). */
   async history(params?: { limit?: number }): Promise<BillingHistoryEntry[]> {
-    return this.http.request<BillingHistoryEntry[]>("GET", "/billing/history", {
-      params: { limit: params?.limit },
-    });
+    const data = await this.http.request<unknown>(
+      "GET",
+      "/billing/history",
+      { params: { limit: params?.limit } },
+    );
+    return parseListResponse<BillingHistoryEntry>(data).items;
   }
 
-  /** Invoice list. */
-  async invoices(params?: { limit?: number }): Promise<Invoice[]> {
-    return this.http.request<Invoice[]>("GET", "/billing/invoices", {
-      params: { limit: params?.limit },
-    });
+  /** Invoice list (cursor-paginated). */
+  async invoices(params?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<InvoiceListResponse> {
+    const data = await this.http.request<unknown>(
+      "GET",
+      "/billing/invoices",
+      { params: { limit: params?.limit, cursor: params?.cursor } },
+    );
+    const parsed = parseListResponse<Invoice>(data, { container: "items" });
+    return { items: parsed.items, next_cursor: parsed.nextCursor };
   }
 
   /** Single run invoice. */
@@ -49,16 +62,27 @@ export class BillingModule {
     );
   }
 
-  /** Credit topup history. */
+  /** Credit topup history (cursor-paginated). */
   async creditHistory(params?: {
     limit?: number;
+    cursor?: string;
     operation?: "debit" | "topup";
-  }): Promise<CreditHistoryEntry[]> {
-    return this.http.request<CreditHistoryEntry[]>(
+  }): Promise<CreditHistoryResponse> {
+    const data = await this.http.request<unknown>(
       "GET",
       "/billing/credit-history",
-      { params: { limit: params?.limit, operation: params?.operation } },
+      {
+        params: {
+          limit: params?.limit,
+          cursor: params?.cursor,
+          operation: params?.operation,
+        },
+      },
     );
+    const parsed = parseListResponse<CreditHistoryEntry>(data, {
+      container: "items",
+    });
+    return { items: parsed.items, next_cursor: parsed.nextCursor };
   }
 
   /** Start a Stripe checkout session. */

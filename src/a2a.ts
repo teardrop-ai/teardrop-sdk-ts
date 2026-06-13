@@ -1,5 +1,6 @@
 import type { HttpTransport } from "./transport";
 import type { AddTrustedAgentRequest, TrustedAgent } from "./types";
+import { parseListResponse } from "./utils/parseListResponse";
 
 export class A2AModule {
   constructor(private readonly http: HttpTransport) {}
@@ -13,7 +14,8 @@ export class A2AModule {
 
   /** List org's trusted agents. */
   async listAgents(): Promise<TrustedAgent[]> {
-    return this.http.request<TrustedAgent[]>("GET", "/a2a/agents");
+    const data = await this.http.request<unknown>("GET", "/a2a/agents");
+    return parseListResponse<TrustedAgent>(data).items;
   }
 
   /** Remove a trusted agent. */

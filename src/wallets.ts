@@ -1,5 +1,6 @@
 import type { HttpTransport } from "./transport";
 import type { LinkWalletRequest, Wallet } from "./types";
+import { parseListResponse } from "./utils/parseListResponse";
 
 export class WalletsModule {
   constructor(private readonly http: HttpTransport) {}
@@ -11,7 +12,8 @@ export class WalletsModule {
 
   /** List all wallets linked to the current user. */
   async list(): Promise<Wallet[]> {
-    return this.http.request<Wallet[]>("GET", "/wallets/me");
+    const data = await this.http.request<unknown>("GET", "/wallets/me");
+    return parseListResponse<Wallet>(data).items;
   }
 
   /** Unlink a wallet. */

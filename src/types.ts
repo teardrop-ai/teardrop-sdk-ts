@@ -60,6 +60,34 @@ export interface AgentTool {
   access_mode: "included" | "subscribed";
 }
 
+// ── Envelope responses ────────────────────────────────────────────────────────
+
+/** Response from GET /agent/tools. */
+export interface AgentToolsResponse {
+  tools: AgentTool[];
+}
+
+/**
+ * Generic cursor-paginated page returned by list endpoints.
+ * Matches the backend pattern in `shared/pagination.py`.
+ */
+export interface Page<T> {
+  items: T[];
+  /** Opaque pagination cursor; `null` = last page. */
+  next_cursor: string | null;
+}
+
+/** Response from GET /billing/invoices (cursor-paginated). */
+export type InvoiceListResponse = Page<Invoice>;
+
+/** Response from GET /billing/credit-history (cursor-paginated). */
+export type CreditHistoryResponse = Page<CreditHistoryEntry>;
+
+/** Response from GET /marketplace/subscriptions (flat envelope, not paginated). */
+export interface SubscriptionsResponse {
+  subscriptions: MarketplaceSubscription[];
+}
+
 export interface RunStartedEvent {
   event: "RUN_STARTED";
   data: { run_id: string; thread_id: string };

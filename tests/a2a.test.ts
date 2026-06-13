@@ -1,0 +1,50 @@
+/**
+ * Tests for A2AModule — list endpoint using parseListResponse.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { A2AModule } from "../src/a2a";
+import type { HttpTransport } from "../src/transport";
+import type { TrustedAgent } from "../src/types";
+
+function makeMockHttp() {
+  return {
+    request: vi.fn(),
+    stream: vi.fn(),
+    setToken: vi.fn(),
+    getToken: vi.fn(),
+  } as unknown as HttpTransport;
+}
+
+describe("A2AModule.listAgents", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let a2a: A2AModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    a2a = new A2AModule(http);
+  });
+
+  it("accepts bare array", async () => {
+    const items: TrustedAgent[] = [
+      {
+        id: "ta-1",
+        agent_url: "https://agent.example.com",
+        label: "My Agent",
+        max_cost_usdc: 0.1,
+        require_x402: false,
+        jwt_forward: true,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(http.request).mockResolvedValue(items);
+    const result = await a2a.listAgents();
+    expect(result).toHaveLength(1);
+    expect(result[0].agent_url).toBe("https://agent.example.com");
+  });
+
+  it("returns empty array when no trusted agents", async () => {
+    vi.mocked(http.request).mockResolvedValue([]);
+    const result = await a2a.listAgents();
+    expect(result).toEqual([]);
+  });
+});

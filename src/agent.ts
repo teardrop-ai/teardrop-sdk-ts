@@ -1,6 +1,7 @@
 import type { HttpTransport } from "./transport";
 import type { AgentRunRequest, AgentTool, SseEvent } from "./types";
 import { parseSseStream } from "./utils/parseSseStream";
+import { parseListResponse } from "./utils/parseListResponse";
 
 export interface AgentRunOptions {
   signal?: AbortSignal;
@@ -47,6 +48,7 @@ export class AgentModule {
    * Returns platform, org, and marketplace tools with their source and access mode.
    */
   async tools(): Promise<AgentTool[]> {
-    return this.http.request<AgentTool[]>("GET", "/agent/tools");
+    const data = await this.http.request<unknown>("GET", "/agent/tools");
+    return parseListResponse<AgentTool>(data, { container: "tools" }).items;
   }
 }

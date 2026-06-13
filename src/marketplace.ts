@@ -6,6 +6,7 @@ import type {
   MarketplaceTool,
   WithdrawRequest,
 } from "./types";
+import { parseListResponse } from "./utils/parseListResponse";
 
 export class MarketplaceModule {
   constructor(private readonly http: HttpTransport) {}
@@ -107,10 +108,13 @@ export class MarketplaceModule {
 
   /** List active subscriptions. */
   async subscriptions(): Promise<MarketplaceSubscription[]> {
-    return this.http.request<MarketplaceSubscription[]>(
+    const data = await this.http.request<unknown>(
       "GET",
       "/marketplace/subscriptions",
     );
+    return parseListResponse<MarketplaceSubscription>(data, {
+      container: "subscriptions",
+    }).items;
   }
 
   /** Unsubscribe from a marketplace tool. */

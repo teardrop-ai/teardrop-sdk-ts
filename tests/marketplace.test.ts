@@ -189,7 +189,9 @@ describe("MarketplaceModule.subscriptions", () => {
   });
 
   it("calls GET /marketplace/subscriptions", async () => {
-    vi.mocked(http.request).mockResolvedValue([SAMPLE_SUB]);
+    vi.mocked(http.request).mockResolvedValue({
+      subscriptions: [SAMPLE_SUB],
+    });
     await mp.subscriptions();
     expect(http.request).toHaveBeenCalledWith(
       "GET",
@@ -198,7 +200,9 @@ describe("MarketplaceModule.subscriptions", () => {
   });
 
   it("returns an array of MarketplaceSubscription", async () => {
-    vi.mocked(http.request).mockResolvedValue([SAMPLE_SUB]);
+    vi.mocked(http.request).mockResolvedValue({
+      subscriptions: [SAMPLE_SUB],
+    });
     const subs = await mp.subscriptions();
     expect(Array.isArray(subs)).toBe(true);
     expect(subs[0].id).toBe("sub-uuid-1");
@@ -483,7 +487,7 @@ describe("Marketplace subscription lifecycle workflow", () => {
 
     vi.mocked(http.request)
       .mockResolvedValueOnce(SAMPLE_SUB)        // subscribe
-      .mockResolvedValueOnce([SAMPLE_SUB])      // subscriptions
+      .mockResolvedValueOnce({ subscriptions: [SAMPLE_SUB] })  // subscriptions
       .mockResolvedValueOnce(undefined);        // unsubscribe
 
     const sub = await mp.subscribe("acme/web_search");

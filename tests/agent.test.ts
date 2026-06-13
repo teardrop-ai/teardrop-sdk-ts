@@ -21,6 +21,7 @@ import {
 } from "../src/types";
 import { collectText } from "../src/utils/parseSseStream";
 import type { HttpTransport } from "../src/transport";
+import type { AgentTool } from "../src/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -429,5 +430,45 @@ describe("collectText wrapping AgentModule.run", () => {
     );
     const text = await collectText(agent.run({ message: "empty" }));
     expect(text).toBe("");
+  });
+});
+
+// ── tools() ───────────────────────────────────────────────────────────────────
+
+describe("AgentModule.tools", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let agent: AgentModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    agent = new AgentModule(http);
+  });
+
+  it("returns agent tools from envelope", async () => {
+    const mockTools: AgentTool[] = [
+      {
+        name: "platform/web_search",
+        description: "Search the web",
+        input_schema: {},
+        source: "platform",
+        access_mode: "included",
+      },
+    ];
+    vi.mocked(http.request).mockResolvedValue({ tools: mockTools });
+    const result = await agent.tools();
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("platform/web_search");
+  });
+
+  it("calls GET /agent/tools", async () => {
+    vi.mocked(http.request).mockResolvedValue({ tools: [] });
+    await agent.tools();
+    expect(http.request).toHaveBeenCalledWith("GET", "/agent/tools");
+  });
+
+  it("returns empty array when no tools", async () => {
+    vi.mocked(http.request).mockResolvedValue({ tools: [] });
+    const result = await agent.tools();
+    expect(result).toEqual([]);
   });
 });
