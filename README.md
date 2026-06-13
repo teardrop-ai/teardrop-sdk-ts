@@ -432,7 +432,7 @@ const invoice = await client.billing.invoice(runId);
 // → { run_id, tokens_in, tokens_out, tool_calls, total_usdc, settled_at }
 
 const credits = await client.billing.creditHistory({ operation: "topup" });
-// → [{ id, amount_usdc, operation, balance_usdc_after, reason, created_at }, ...]
+// → { items: [{ id, amount_usdc, operation, balance_usdc_after, reason, created_at }, ...], next_cursor }
 ```
 
 ### Stripe Top-up
@@ -782,8 +782,8 @@ All request/response types are exported from `teardrop-sdk`.
 | `CreditBalance` / `BillingBalance` | `billing.balance()` |
 | `BillingPricingResponse`, `ToolPricing` | `billing.pricing()` |
 | `BillingHistoryEntry` | `billing.history()` |
-| `Invoice` | `billing.invoices()`, `billing.invoice()` |
-| `CreditHistoryEntry` | `billing.creditHistory()` |
+| `Invoice`, `InvoiceListResponse` | `billing.invoices()` (paginated), `billing.invoice()` |
+| `CreditHistoryEntry`, `CreditHistoryResponse` | `billing.creditHistory()` (paginated) |
 | `StripeTopupRequest`, `StripeTopupResponse`, `StripeTopupStatusResponse` | `billing.topupStripe()`, `billing.topupStripeStatus()` |
 | `UsdcTopupRequirements`, `UsdcTopupRequest` | `billing.topupUsdcRequirements()`, `billing.topupUsdc()` |
 | `UsageSummary` | `usage.me()` |
