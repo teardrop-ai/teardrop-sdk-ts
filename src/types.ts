@@ -448,6 +448,8 @@ export interface MarketplaceTool {
   author: string;
   /** Author org slug (e.g. "platform" for Teardrop built-in tools). */
   author_slug: string;
+  /** Backend-supplied tool type tag (e.g. "webhook", "mcp", "platform"). */
+  tool_type: string;
 }
 
 export interface AuthorConfig {

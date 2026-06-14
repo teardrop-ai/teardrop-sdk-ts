@@ -31,6 +31,7 @@ const SAMPLE_TOOL: MarketplaceTool = {
   description: "Search the web.",
   input_schema: {},
   cost_usdc: 0.001,
+  tool_type: "webhook",
 };
 
 const SAMPLE_SUB: MarketplaceSubscription = {
@@ -133,6 +134,15 @@ describe("MarketplaceModule.catalog", () => {
     expect(result.tools[0].author).toBe("Acme Corp");
     expect(result.tools[0].author_slug).toBe("acme");
     expect(result.tools[0].cost_usdc).toBe(0.001);
+  });
+
+  it("round-trips tool_type from the wire payload", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      tools: [SAMPLE_TOOL],
+      next_cursor: null,
+    });
+    const result = await mp.catalog();
+    expect(result.tools[0].tool_type).toBe("webhook");
   });
 });
 
