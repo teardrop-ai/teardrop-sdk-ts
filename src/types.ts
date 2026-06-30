@@ -211,6 +211,98 @@ export type SseEvent =
   | ErrorEvent
   | DoneEvent;
 
+// ── Schedules & Event Triggers ─────────────────────────────────────────────
+
+export interface CreateScheduledRunRequest {
+  name: string;
+  prompt: string;
+  interval_seconds: number;
+  callback_url?: string | null;
+}
+
+export interface UpdateScheduledRunRequest {
+  name?: string;
+  prompt?: string;
+  interval_seconds?: number;
+  enabled?: boolean;
+  callback_url?: string | null;
+}
+
+export interface ScheduledRun {
+  id: string;
+  org_id: string;
+  user_id: string;
+  name: string;
+  prompt: string;
+  schedule_kind: "interval";
+  interval_seconds: number;
+  enabled: boolean;
+  callback_url: string | null;
+  next_run_at: string;
+  last_run_at: string | null;
+  consecutive_failures: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledRunResult {
+  id: string;
+  schedule_id: string;
+  org_id: string;
+  run_id: string;
+  status: "completed" | "failed" | "timeout" | "skipped";
+  output_text: string;
+  cost_usdc: number;
+  error: string;
+  created_at: string;
+}
+
+export interface CreateEventTriggerRequest {
+  name: string;
+  prompt: string;
+  callback_url?: string | null;
+}
+
+export interface UpdateEventTriggerRequest {
+  name?: string;
+  prompt?: string;
+  enabled?: boolean;
+  callback_url?: string | null;
+}
+
+export interface EventTrigger {
+  id: string;
+  org_id: string;
+  user_id: string;
+  name: string;
+  prompt: string;
+  schedule_kind: "event";
+  enabled: boolean;
+  callback_url: string | null;
+  consecutive_failures: number;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventTriggerWithSecret extends EventTrigger {
+  trigger_token: string;
+  event_path: string;
+  secret: string;
+}
+
+export interface RotateEventTriggerSecretResponse {
+  id: string;
+  secret: string;
+}
+
+export interface EventDispatchAccepted {
+  run_id: string;
+  status: "accepted" | "duplicate";
+  schedule_id: string;
+  result_path: string;
+}
+
 // ── Org Webhook Tools ────────────────────────────────────────────────────────
 
 export interface OrgTool {

@@ -6,6 +6,8 @@ export type { TeardropClientOptions } from "./client";
 export { AuthModule } from "./auth";
 export { AgentModule } from "./agent";
 export type { AgentRunOptions } from "./agent";
+export { SchedulesModule } from "./schedules";
+export { EventTriggersModule } from "./eventTriggers";
 export { CredentialsModule } from "./credentials";
 export { ToolsModule } from "./tools";
 export { McpModule } from "./mcp";
@@ -61,6 +63,16 @@ export type {
   RunFinishedEvent,
   ErrorEvent,
   DoneEvent,
+  CreateScheduledRunRequest,
+  UpdateScheduledRunRequest,
+  ScheduledRun,
+  ScheduledRunResult,
+  CreateEventTriggerRequest,
+  UpdateEventTriggerRequest,
+  EventTrigger,
+  EventTriggerWithSecret,
+  RotateEventTriggerSecretResponse,
+  EventDispatchAccepted,
   OrgCredentialsEntry,
   OrgCredentialsResponse,
   RegenerateCredentialsResponse,

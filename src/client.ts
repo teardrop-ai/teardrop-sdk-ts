@@ -1,6 +1,8 @@
 import { HttpTransport } from "./transport";
 import { AuthModule } from "./auth";
 import { AgentModule } from "./agent";
+import { SchedulesModule } from "./schedules";
+import { EventTriggersModule } from "./eventTriggers";
 import { CredentialsModule } from "./credentials";
 import { ToolsModule } from "./tools";
 import { McpModule } from "./mcp";
@@ -55,6 +57,8 @@ export class TeardropClient {
 
   readonly auth: AuthModule;
   readonly agent: AgentModule;
+  readonly schedules: SchedulesModule;
+  readonly eventTriggers: EventTriggersModule;
   readonly credentials: CredentialsModule;
   readonly tools: ToolsModule;
   readonly mcp: McpModule;
@@ -81,6 +85,8 @@ export class TeardropClient {
 
     this.auth = new AuthModule(this.http);
     this.agent = new AgentModule(this.http);
+  this.schedules = new SchedulesModule(this.http);
+  this.eventTriggers = new EventTriggersModule(this.http);
     this.credentials = new CredentialsModule(this.http);
     this.tools = new ToolsModule(this.http);
     this.mcp = new McpModule(this.http);
