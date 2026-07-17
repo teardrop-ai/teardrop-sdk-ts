@@ -5,6 +5,8 @@ import type {
   McpServerResponse,
   UpdateMcpServerRequest,
   McpServerDeletedResponse,
+  TestMcpToolRequest,
+  TestMcpToolResponse,
 } from "./types";
 import { parseListResponse } from "./utils/parseListResponse";
 
@@ -47,6 +49,17 @@ export class McpModule {
     return this.http.request<McpDiscoverResponse>(
       "POST",
       `/mcp/servers/${encodeURIComponent(id)}/discover`,
+    );
+  }
+
+  async testTool(
+    id: string,
+    data: TestMcpToolRequest,
+  ): Promise<TestMcpToolResponse> {
+    return this.http.request<TestMcpToolResponse>(
+      "POST",
+      `/mcp/servers/${encodeURIComponent(id)}/test-tool`,
+      { body: data },
     );
   }
 }

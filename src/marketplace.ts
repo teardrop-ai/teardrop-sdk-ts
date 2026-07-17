@@ -1,9 +1,18 @@
 import type { HttpTransport } from "./transport";
 import type {
   MarketplaceAuthorConfigResponse,
+  MarketplaceAuthorProfileResponse,
   MarketplaceBalanceResponse,
   MarketplaceCatalogResponse,
+  MarketplaceCatalogDetailResponse,
+  MarketplaceEarningsByToolResponse,
   MarketplaceEarningsResponse,
+  MarketplaceImportPreviewRequest,
+  MarketplaceImportPreviewResponse,
+  MarketplaceImportPublishRequest,
+  MarketplaceImportPublishResponse,
+  RunFeedbackRequest,
+  RunFeedbackResponse,
   MarketplaceSubscriptionListResponse,
   MarketplaceSubscriptionResponse,
   MarketplaceWithdrawalResponse,
@@ -34,6 +43,37 @@ export class MarketplaceModule {
         },
         auth: false,
       },
+    );
+  }
+
+  /** Browse one author's published marketplace tools (no auth required). */
+  async getAuthorProfile(
+    orgSlug: string,
+    params?: { sort?: string; limit?: number; cursor?: string | null },
+  ): Promise<MarketplaceAuthorProfileResponse> {
+    return this.http.request<MarketplaceAuthorProfileResponse>(
+      "GET",
+      `/marketplace/authors/${encodeURIComponent(orgSlug)}`,
+      {
+        params: {
+          sort: params?.sort,
+          limit: params?.limit,
+          cursor: params?.cursor ?? undefined,
+        },
+        auth: false,
+      },
+    );
+  }
+
+  /** Get one published marketplace tool (no auth required). */
+  async getCatalogDetail(
+    orgSlug: string,
+    toolName: string,
+  ): Promise<MarketplaceCatalogDetailResponse> {
+    return this.http.request<MarketplaceCatalogDetailResponse>(
+      "GET",
+      `/marketplace/catalog/${encodeURIComponent(orgSlug)}/${encodeURIComponent(toolName)}`,
+      { auth: false },
     );
   }
 
@@ -77,6 +117,49 @@ export class MarketplaceModule {
           cursor: params?.cursor,
         },
       },
+    );
+  }
+
+  /** Return aggregate earnings by tool. */
+  async earningsByTool(): Promise<MarketplaceEarningsByToolResponse> {
+    return this.http.request<MarketplaceEarningsByToolResponse>(
+      "GET",
+      "/marketplace/earnings/by-tool",
+    );
+  }
+
+  /** Preview MCP tools before publishing them to the marketplace. */
+  async previewImport(
+    data: MarketplaceImportPreviewRequest,
+  ): Promise<MarketplaceImportPreviewResponse> {
+    return this.http.request<MarketplaceImportPreviewResponse>(
+      "POST",
+      "/marketplace/import/preview",
+      { body: data },
+    );
+  }
+
+  /** Publish selected MCP tools as marketplace-visible tools. */
+  async publishImport(
+    data: MarketplaceImportPublishRequest,
+  ): Promise<MarketplaceImportPublishResponse> {
+    return this.http.request<MarketplaceImportPublishResponse>(
+      "POST",
+      "/marketplace/import/publish",
+      { body: data },
+    );
+  }
+
+  /** Submit a quality rating for a marketplace tool call. */
+  async submitToolFeedback(
+    orgSlug: string,
+    toolName: string,
+    data: RunFeedbackRequest,
+  ): Promise<RunFeedbackResponse> {
+    return this.http.request<RunFeedbackResponse>(
+      "POST",
+      `/marketplace/tools/${encodeURIComponent(orgSlug)}/${encodeURIComponent(toolName)}/feedback`,
+      { body: data },
     );
   }
 

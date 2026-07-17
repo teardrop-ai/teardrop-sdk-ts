@@ -512,6 +512,18 @@ describe("AgentModule — decisions and tool exclusions", () => {
     expect(result.next_cursor).toBe("cursor-123");
   });
 
+  it("calls PATCH /agent/runs/{run_id}/outcome with the rating", async () => {
+    const mockResponse = { status: "recorded" } as const;
+    vi.mocked(http.request).mockResolvedValue(mockResponse);
+    const result = await agent.setOutcome("run/1", -1);
+    expect(http.request).toHaveBeenCalledWith(
+      "PATCH",
+      "/agent/runs/run%2F1/outcome",
+      { body: { rating: -1 } },
+    );
+    expect(result.status).toBe("recorded");
+  });
+
   it("calls GET /agent/tool-exclusions", async () => {
     const mockResponse = { tool_names: ["web_search"] };
     vi.mocked(http.request).mockResolvedValue(mockResponse);

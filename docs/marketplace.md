@@ -37,6 +37,11 @@ for (const tool of catalog.tools) {
   console.log(`  Price: $${tool.cost_usdc / 1_000_000}`);
   console.log(`  Author: ${tool.author} (@${tool.author_slug})`);
 }
+
+// Browse one author's profile and inspect a single published tool
+const author = await client.marketplace.getAuthorProfile("acme", { limit: 20 });
+const detail = await client.marketplace.getCatalogDetail("acme", "web_search");
+console.log(author.org_name, author.tool_count, detail.tool.qualified_name);
 ```
 
 ## Subscriptions & Integration
@@ -87,6 +92,49 @@ const filtered = await client.marketplace.earnings({
   tool_name: "web_search",
   limit: 100,
   cursor: "next_page",
+});
+
+// View aggregate totals for each tool
+const byTool = await client.marketplace.earningsByTool();
+for (const tool of byTool.tools) {
+  console.log(tool.tool_name, tool.total_author_share_usdc);
+}
+```
+
+### Import MCP Tools
+
+Preview registered MCP tools before publishing them, then publish the selected
+tools with marketplace metadata and pricing:
+
+```typescript
+const preview = await client.marketplace.previewImport({
+  server_id: "mcp-server-id",
+  tool_names: ["search"],
+});
+
+if (preview.can_publish) {
+  await client.marketplace.publishImport({
+    server_id: preview.server_id,
+    tools: [{
+      remote_tool_name: "search",
+      name: "search",
+      description: "Search the web",
+      category: "search",
+      base_price_usdc: 100,
+    }],
+  });
+}
+```
+
+### Tool Feedback
+
+Submit a ground-truth quality signal for a tool call from one of your runs:
+
+```typescript
+await client.marketplace.submitToolFeedback("acme", "web_search", {
+  run_id: "run-id",
+  rating: 1, // -1 = bad, 0 = neutral, 1 = good
+  comment: "Returned useful results",
 });
 ```
 

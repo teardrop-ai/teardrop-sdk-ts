@@ -48,6 +48,7 @@ Detailed guides live in [docs/](docs/), one file per resource module:
 | [LLM Configuration & Models](docs/llm-and-models.md) | `client.llm`, `client.models` | Provider/model routing, BYOK, benchmark-driven model selection |
 | [Automation](docs/automation.md) | `client.schedules`, `client.eventTriggers` | Interval-based scheduled runs and inbound event triggers |
 | [Wallets & Delegation](docs/wallets-and-delegation.md) | `client.wallets`, `client.agentWallets`, `client.a2a` | SIWE wallets, CDP agent wallets, cross-org A2A delegation |
+| Administration | `client.admin` | Organization, user, billing, settlement, and platform administration endpoints |
 | [Error Handling](docs/error-handling.md) | cross-cutting | `TeardropError` hierarchy and retry patterns |
 | [Type Reference](docs/type-reference.md) | `teardrop-sdk` | Exported TypeScript types indexed by method |
 

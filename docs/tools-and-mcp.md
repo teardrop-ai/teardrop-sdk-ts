@@ -69,6 +69,12 @@ for (const tool of discovery.tools) {
   console.log(tool.name, tool.description);
 }
 
+const probe = await client.mcp.testTool(server.id, {
+  tool_name: "create_refund",
+  args: { charge_id: "ch_abc123" },
+});
+console.log(probe.success, probe.result, probe.error);
+
 await client.mcp.delete(server.id);
 ```
 

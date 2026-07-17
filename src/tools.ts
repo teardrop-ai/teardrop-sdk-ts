@@ -2,6 +2,8 @@ import type { HttpTransport } from "./transport";
 import type {
   CreateOrgToolRequest,
   OrgToolResponse,
+  TestWebhookRequest,
+  TestWebhookResponse,
   UpdateOrgToolRequest,
   ToolDeletedResponse,
 } from "./types";
@@ -33,5 +35,14 @@ export class ToolsModule {
 
   async delete(id: string): Promise<ToolDeletedResponse> {
     return this.http.request<ToolDeletedResponse>("DELETE", `/tools/${encodeURIComponent(id)}`);
+  }
+
+  /** Probe a webhook before creating an org tool. */
+  async testWebhook(data: TestWebhookRequest): Promise<TestWebhookResponse> {
+    return this.http.request<TestWebhookResponse>(
+      "POST",
+      "/tools/test-webhook",
+      { body: data },
+    );
   }
 }

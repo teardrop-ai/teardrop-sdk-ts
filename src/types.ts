@@ -116,6 +116,16 @@ export interface AgentDecisionListResponse {
   next_cursor?: string | null;
 }
 
+export type RunOutcomeRating = -1 | 0 | 1;
+
+export interface RunOutcomeRequest {
+  rating: RunOutcomeRating;
+}
+
+export interface RunOutcomeResponse {
+  status: "recorded";
+}
+
 export interface ToolExclusionRequest {
   tool_name: string;
 }
@@ -423,14 +433,18 @@ export interface OrgToolResponse {
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
-  output_schema?: Record<string, unknown>;
-  webhook_url: string;
+  output_schema: Record<string, unknown> | null;
+  webhook_url: string | null;
   webhook_method: string;
+  mcp_server_id: string | null;
+  mcp_tool_name: string | null;
   has_auth: boolean;
+  timeout_seconds: number;
   is_active: boolean;
   publish_as_mcp: boolean;
   marketplace_description: string | null;
   base_price_usdc: number | null;
+  category: string;
   created_at: string;
   updated_at: string;
 }
@@ -473,6 +487,25 @@ export interface UpdateOrgToolRequest {
   base_price_usdc?: number;
 }
 
+export interface TestWebhookRequest {
+  webhook_url: string;
+  webhook_method?: "GET" | "POST" | "PUT";
+  auth_header_name?: string | null;
+  auth_header_value?: string | null;
+  payload?: Record<string, unknown>;
+  timeout_seconds?: number;
+}
+
+export interface TestWebhookResponse {
+  success: boolean;
+  status_code: number | null;
+  latency_ms: number;
+  response_body: Record<string, unknown> | null;
+  error: string | null;
+}
+
+export type HealthResponse = Record<string, unknown>;
+
 // ── MCP Servers ──────────────────────────────────────────────────────────────
 
 export type McpServerAuthType = "none" | "bearer" | "header";
@@ -489,6 +522,18 @@ export interface McpServerResponse {
   timeout_seconds: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TestMcpToolRequest {
+  tool_name: string;
+  args?: Record<string, unknown>;
+}
+
+export interface TestMcpToolResponse {
+  success: boolean;
+  latency_ms: number;
+  result: Record<string, unknown> | null;
+  error: string | null;
 }
 
 export type OrgMcpServer = McpServerResponse;
@@ -743,6 +788,19 @@ export interface MarketplaceCatalogResponse {
   next_cursor: string | null;
 }
 
+export interface MarketplaceAuthorProfileResponse {
+  org_slug: string;
+  org_name: string;
+  tool_count: number;
+  total_calls: number;
+  tools: MarketplaceToolSummary[];
+  next_cursor?: string | null;
+}
+
+export interface MarketplaceCatalogDetailResponse {
+  tool: MarketplaceToolSummary;
+}
+
 export interface MarketplaceAuthorConfigResponse {
   org_id: string;
   settlement_wallet: string | null;
@@ -774,6 +832,354 @@ export type EarningsEntry = MarketplaceEarningEntry;
 export interface MarketplaceEarningsResponse {
   earnings: MarketplaceEarningEntry[];
   next_cursor: string | null;
+}
+
+export interface MarketplaceEarningsByToolEntry {
+  tool_name: string;
+  total_calls: number;
+  total_amount_usdc: number;
+  total_author_share_usdc: number;
+  pending_author_share_usdc: number;
+  settled_author_share_usdc: number;
+  total_platform_share_usdc: number;
+}
+
+export interface MarketplaceEarningsByToolResponse {
+  tools: MarketplaceEarningsByToolEntry[];
+}
+
+export interface MarketplaceImportPreviewRequest {
+  server_id: string;
+  tool_names?: string[] | null;
+}
+
+export interface MarketplaceImportPreviewError {
+  remote_tool_name: string;
+  status_code: number;
+  error: string;
+}
+
+export interface ImportPreviewSchemaStatus {
+  input: string;
+  output: string;
+}
+
+export interface ImportPreviewDroppedFeatures {
+  input?: string[];
+  output?: string[];
+}
+
+export interface MarketplaceImportPreviewTool {
+  remote_tool_name: string;
+  proposed_name: string;
+  description: string;
+  marketplace_description: string;
+  input_schema: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
+  schema_status: ImportPreviewSchemaStatus;
+  dropped_schema_features: ImportPreviewDroppedFeatures;
+  name_adjusted: boolean;
+  name_collision_resolved: boolean;
+  quota_exceeded: boolean;
+  publishable: boolean;
+  suggested_base_price_usdc: number;
+  category?: string;
+  warnings?: string[];
+}
+
+export interface MarketplaceImportPreviewResponse {
+  server_id: string;
+  slots_remaining: number;
+  can_publish: boolean;
+  tools: MarketplaceImportPreviewTool[];
+  errors: MarketplaceImportPreviewError[];
+  blockers?: string[];
+}
+
+export type MarketplaceToolCategory =
+  | ""
+  | "defi"
+  | "search"
+  | "data"
+  | "communication"
+  | "utility";
+
+export interface MarketplaceImportPublishToolRequest {
+  remote_tool_name: string;
+  name: string;
+  description: string;
+  category?: MarketplaceToolCategory;
+  base_price_usdc?: number;
+  marketplace_description?: string | null;
+  input_schema?: Record<string, unknown> | null;
+  output_schema?: Record<string, unknown> | null;
+}
+
+export interface MarketplaceImportPublishRequest {
+  server_id: string;
+  tools: MarketplaceImportPublishToolRequest[];
+}
+
+export interface MarketplaceImportPublishedTool {
+  id: string;
+  name: string;
+  org_id: string;
+  publish_as_mcp: boolean;
+  base_price_usdc: number;
+  mcp_server_id?: string | null;
+  mcp_tool_name?: string | null;
+}
+
+export interface MarketplaceImportPublishCreatedItem {
+  remote_tool_name: string;
+  tool: MarketplaceImportPublishedTool;
+}
+
+export interface MarketplaceImportPublishError {
+  remote_tool_name: string;
+  name: string;
+  status_code: number;
+  error: string;
+}
+
+export interface MarketplaceImportPublishResponse {
+  server_id: string;
+  created: MarketplaceImportPublishCreatedItem[];
+  errors: MarketplaceImportPublishError[];
+}
+
+export interface RunFeedbackRequest {
+  run_id: string;
+  rating: RunOutcomeRating;
+  comment?: string;
+}
+
+export interface RunFeedbackResponse {
+  id: string;
+  run_id: string;
+  qualified_tool_name: string;
+  rating: RunOutcomeRating;
+  created_at: string;
+}
+
+// ── Admin ───────────────────────────────────────────────────────────────────
+
+export interface CreateOrgRequest {
+  name: string;
+}
+
+export interface CreateOrgResponse {
+  id: string;
+  name: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  secret: string;
+  org_id: string;
+  role?: string;
+}
+
+export interface CreateUserResponse {
+  id: string;
+  email: string;
+  org_id: string;
+  role: string;
+}
+
+export interface CreateClientCredentialsRequest {
+  org_id: string;
+}
+
+export interface CreateClientCredentialsResponse {
+  client_id: string;
+  client_secret: string;
+  org_id: string;
+  created_at: string;
+}
+
+export interface OrgSpendingConfigResponse {
+  org_id: string;
+  balance_usdc: number;
+  spending_limit_usdc: number;
+  is_paused: boolean;
+  daily_spend_usdc: number;
+}
+
+export interface SpendingConfigUpdate {
+  spending_limit_usdc?: number | null;
+  is_paused?: boolean | null;
+}
+
+export interface ToolPricingOverrideRequest {
+  tool_name: string;
+  cost_usdc: number;
+  description?: string;
+}
+
+export interface ToolPricingOverrideResponse {
+  tool_name: string;
+  cost_usdc: number;
+  description: string;
+  updated: boolean;
+}
+
+export interface ToolPricingDeleteResponse {
+  deleted: boolean;
+  tool_name: string;
+}
+
+export interface TopupRequest {
+  org_id: string;
+  amount_usdc: number;
+}
+
+export interface AdminTopupResponse {
+  org_id: string;
+  new_balance_usdc: number;
+}
+
+export interface AdminCreateA2AAgentRequest {
+  org_id: string;
+  agent_url: string;
+  label?: string | null;
+  max_cost_usdc?: number;
+  require_x402?: boolean;
+  jwt_forward?: boolean;
+}
+
+export interface AdminA2AAgentResponse {
+  id: string;
+  org_id: string;
+  agent_url: string;
+  max_cost_usdc: number;
+  require_x402: boolean;
+  jwt_forward: boolean;
+  label?: string | null;
+}
+
+export interface AdminA2AAgentListItem {
+  id: string;
+  org_id: string;
+  agent_url: string;
+  max_cost_usdc: number;
+  require_x402: boolean;
+  jwt_forward: boolean;
+  label?: string | null;
+  created_at?: string | null;
+}
+
+export interface AdminA2AAgentDeletedResponse {
+  deleted: string;
+}
+
+export interface PendingSettlementItem {
+  id: string;
+  usage_event_id: string;
+  org_id: string;
+  run_id: string;
+  billing_method: string;
+  amount_usdc: number;
+  retry_count: number;
+  max_retries: number;
+  status: string;
+  created_at: string;
+  last_error?: string | null;
+  next_retry_at?: string | null;
+}
+
+export interface PendingSettlementsResponse {
+  items: PendingSettlementItem[];
+}
+
+export interface SettlementRetryResponse {
+  settlement_id: string;
+  status: "pending";
+}
+
+export interface RevenueSummaryResponse {
+  total_settlements: number;
+  total_revenue_usdc: number;
+}
+
+export interface AdminWithdrawalItem {
+  id: string;
+  org_id: string;
+  amount_usdc: number;
+  wallet: string;
+  status: string;
+  created_at: string;
+  settled_at?: string | null;
+}
+
+export interface AdminWithdrawalListResponse {
+  withdrawals: AdminWithdrawalItem[];
+}
+
+export interface AdminWithdrawalActionResponse {
+  id: string;
+  org_id: string;
+  amount_usdc: number;
+  status: string;
+}
+
+export interface CompleteWithdrawalRequest {
+  tx_hash: string;
+}
+
+export interface CompleteWithdrawalResponse {
+  status: "completed";
+  tx_hash: string;
+}
+
+export interface WithdrawalResetResponse {
+  status: "pending";
+  id: string;
+}
+
+export interface SettlementBalanceResponse {
+  account: string;
+  address: string;
+  chain_id: number;
+  balance_usdc: number;
+}
+
+export interface MarketplaceSweepResponse {
+  processed: number;
+}
+
+export interface SweepStatusItem {
+  id: string;
+  org_id: string;
+  amount_usdc: number;
+  status: string;
+  sweep_attempt_count: number;
+  created_at: string;
+  last_sweep_error?: string | null;
+  next_sweep_at?: string | null;
+}
+
+export interface SweepStatusResponse {
+  pending: SweepStatusItem[];
+  exhausted: SweepStatusItem[];
+}
+
+export interface AdminMemoryItem {
+  id: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  source_run_id?: string | null;
+}
+
+export interface AdminMemoryListResponse {
+  items: AdminMemoryItem[];
+  total: number;
+}
+
+export interface AdminMemoryPurgeResponse {
+  status: "purged";
+  deleted: number;
 }
 
 export interface WithdrawRequest {

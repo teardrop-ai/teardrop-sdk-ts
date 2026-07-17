@@ -15,7 +15,8 @@ import { MarketplaceModule } from "./marketplace";
 import { LlmModule } from "./llmConfig";
 import { ModelsModule } from "./models";
 import { A2AModule } from "./a2a";
-import type { AgentCard } from "./types";
+import { AdminModule } from "./admin";
+import type { AgentCard, HealthResponse } from "./types";
 
 export interface TeardropClientOptions {
   /** API base URL, e.g. "https://api.teardrop.dev" */
@@ -71,6 +72,7 @@ export class TeardropClient {
   readonly llm: LlmModule;
   readonly models: ModelsModule;
   readonly a2a: A2AModule;
+  readonly admin: AdminModule;
 
   constructor(opts: TeardropClientOptions) {
     this.http = new HttpTransport({
@@ -99,6 +101,7 @@ export class TeardropClient {
     this.llm = new LlmModule(this.http);
     this.models = new ModelsModule(this.http);
     this.a2a = new A2AModule(this.http);
+    this.admin = new AdminModule(this.http);
   }
 
   /** Set the Bearer JWT token for authenticated requests. */
@@ -122,6 +125,13 @@ export class TeardropClient {
       "/.well-known/agent-card.json",
       { auth: false },
     );
+  }
+
+  /** Check service liveness without sending authentication credentials. */
+  async health(): Promise<HealthResponse> {
+    return this.http.request<HealthResponse>("GET", "/health", {
+      auth: false,
+    });
   }
 
   /**

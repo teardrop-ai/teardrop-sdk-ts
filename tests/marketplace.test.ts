@@ -163,6 +163,54 @@ describe("MarketplaceModule.catalog", () => {
   });
 });
 
+// ── author profile and catalog detail ────────────────────────────────────────
+
+describe("MarketplaceModule public catalog details", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("gets an author profile without auth", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      org_slug: "acme",
+      org_name: "Acme Corp",
+      tool_count: 1,
+      total_calls: 10,
+      tools: [SAMPLE_TOOL],
+      next_cursor: null,
+    });
+    const result = await mp.getAuthorProfile("acme", {
+      sort: "popularity",
+      limit: 20,
+      cursor: "next",
+    });
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/authors/acme",
+      {
+        params: { sort: "popularity", limit: 20, cursor: "next" },
+        auth: false,
+      },
+    );
+    expect(result.tools[0].qualified_name).toBe("acme/web_search");
+  });
+
+  it("gets one catalog tool and encodes both path segments", async () => {
+    vi.mocked(http.request).mockResolvedValue({ tool: SAMPLE_TOOL });
+    const result = await mp.getCatalogDetail("acme/corp", "web/search");
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/catalog/acme%2Fcorp/web%2Fsearch",
+      { auth: false },
+    );
+    expect(result.tool.name).toBe("acme/web_search");
+  });
+});
+
 // ── subscribe ──────────────────────────────────────────────────────────────────
 
 describe("MarketplaceModule.subscribe", () => {
@@ -420,6 +468,114 @@ describe("MarketplaceModule.earnings", () => {
     const params = (opts as { params: Record<string, unknown> }).params;
     expect(params.tool_name).toBe("web_search");
     expect(params.cursor).toBe("next-tok");
+  });
+});
+
+// ── earningsByTool ───────────────────────────────────────────────────────────
+
+describe("MarketplaceModule.earningsByTool", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("calls GET /marketplace/earnings/by-tool", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      tools: [
+        {
+          tool_name: "web_search",
+          total_calls: 10,
+          total_amount_usdc: 100,
+          total_author_share_usdc: 90,
+          pending_author_share_usdc: 20,
+          settled_author_share_usdc: 70,
+          total_platform_share_usdc: 10,
+        },
+      ],
+    });
+    const result = await mp.earningsByTool();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/earnings/by-tool",
+    );
+    expect(result.tools[0].total_author_share_usdc).toBe(90);
+  });
+});
+
+// ── MCP import and feedback ──────────────────────────────────────────────────
+
+describe("MarketplaceModule import and feedback", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("previews an MCP import with the server and selected tools", async () => {
+    const request = { server_id: "mcp-1", tool_names: ["search"] };
+    vi.mocked(http.request).mockResolvedValue({
+      server_id: "mcp-1",
+      slots_remaining: 3,
+      can_publish: true,
+      tools: [],
+      errors: [],
+    });
+    const result = await mp.previewImport(request);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/marketplace/import/preview",
+      { body: request },
+    );
+    expect(result.can_publish).toBe(true);
+  });
+
+  it("publishes selected MCP tools", async () => {
+    const request = {
+      server_id: "mcp-1",
+      tools: [
+        {
+          remote_tool_name: "search",
+          name: "search",
+          description: "Search the web",
+          category: "search" as const,
+          base_price_usdc: 100,
+        },
+      ],
+    };
+    vi.mocked(http.request).mockResolvedValue({
+      server_id: "mcp-1",
+      created: [],
+      errors: [],
+    });
+    await mp.publishImport(request);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/marketplace/import/publish",
+      { body: request },
+    );
+  });
+
+  it("submits tool feedback and encodes both path segments", async () => {
+    const request = { run_id: "run-1", rating: 1 as const, comment: "Useful" };
+    vi.mocked(http.request).mockResolvedValue({
+      id: "feedback-1",
+      run_id: "run-1",
+      qualified_tool_name: "acme/org/search/web",
+      rating: 1,
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    const result = await mp.submitToolFeedback("acme/org", "search/web", request);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/marketplace/tools/acme%2Forg/search%2Fweb/feedback",
+      { body: request },
+    );
+    expect(result.qualified_tool_name).toBe("acme/org/search/web");
   });
 });
 

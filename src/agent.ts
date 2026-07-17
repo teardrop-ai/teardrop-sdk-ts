@@ -4,6 +4,8 @@ import type {
   AgentTool,
   SseEvent,
   AgentDecisionListResponse,
+  RunOutcomeRating,
+  RunOutcomeResponse,
   ToolExclusionListResponse,
   ToolExclusionActionResponse,
   ToolExclusionRemovedResponse,
@@ -73,6 +75,18 @@ export class AgentModule {
         cursor: params?.cursor,
       },
     });
+  }
+
+  /** Record the ground-truth outcome for a completed run. */
+  async setOutcome(
+    runId: string,
+    rating: RunOutcomeRating,
+  ): Promise<RunOutcomeResponse> {
+    return this.http.request<RunOutcomeResponse>(
+      "PATCH",
+      `/agent/runs/${encodeURIComponent(runId)}/outcome`,
+      { body: { rating } },
+    );
   }
 
   /**

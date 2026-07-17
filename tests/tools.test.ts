@@ -24,11 +24,15 @@ const TOOL: OrgTool = {
   output_schema: { type: "object", properties: { success: { type: "boolean" } } },
   webhook_url: "https://example.com/hook",
   webhook_method: "POST",
+  mcp_server_id: null,
+  mcp_tool_name: null,
   has_auth: false,
+  timeout_seconds: 30,
   is_active: true,
   publish_as_mcp: false,
   marketplace_description: null,
   base_price_usdc: null,
+  category: "",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -235,5 +239,40 @@ describe("ToolsModule.delete", () => {
   it("throws NotFoundError when the tool does not exist", async () => {
     vi.mocked(http.request).mockRejectedValue(new NotFoundError("Not found"));
     await expect(module.delete("missing")).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+// ── testWebhook ──────────────────────────────────────────────────────────────
+
+describe("ToolsModule.testWebhook", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let module: ToolsModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    module = new ToolsModule(http);
+  });
+
+  it("posts the webhook diagnostic request", async () => {
+    const body = {
+      webhook_url: "https://example.com/hook",
+      webhook_method: "POST" as const,
+      payload: { query: "hello" },
+      timeout_seconds: 10,
+    };
+    vi.mocked(http.request).mockResolvedValue({
+      success: true,
+      status_code: 200,
+      latency_ms: 42,
+      response_body: { ok: true },
+      error: null,
+    });
+    const result = await module.testWebhook(body);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/tools/test-webhook",
+      { body },
+    );
+    expect(result.success).toBe(true);
   });
 });

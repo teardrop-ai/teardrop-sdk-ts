@@ -17,6 +17,7 @@ import type {
   CreateMcpServerRequest,
   DiscoverMcpToolsResponse,
   OrgMcpServer,
+  TestMcpToolRequest,
   UpdateMcpServerRequest,
 } from "../src/types";
 
@@ -332,5 +333,37 @@ describe("McpModule.discover", () => {
     const err = await module.discover("srv-1").catch((e) => e);
     expect(err).toBeInstanceOf(GatewayError);
     expect(err.message).toContain("unreachable");
+  });
+});
+
+// ── testTool ─────────────────────────────────────────────────────────────────
+
+describe("McpModule.testTool", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let module: McpModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    module = new McpModule(http);
+  });
+
+  it("posts the MCP tool diagnostic request", async () => {
+    const body: TestMcpToolRequest = {
+      tool_name: "add",
+      args: { left: 2, right: 3 },
+    };
+    vi.mocked(http.request).mockResolvedValue({
+      success: true,
+      latency_ms: 18,
+      result: { value: 5 },
+      error: null,
+    });
+    const result = await module.testTool("srv/1", body);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/mcp/servers/srv%2F1/test-tool",
+      { body },
+    );
+    expect(result.result).toEqual({ value: 5 });
   });
 });
