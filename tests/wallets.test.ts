@@ -48,3 +48,20 @@ describe("WalletsModule.list", () => {
     expect(result).toEqual([]);
   });
 });
+
+describe("WalletsModule.delete", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let wallets: WalletsModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    wallets = new WalletsModule(http);
+  });
+
+  it("sends DELETE on /wallets/:id and returns status deleted", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
+    const result = await wallets.delete("w-123");
+    expect(result).toEqual({ status: "deleted" });
+    expect(http.request).toHaveBeenCalledWith("DELETE", "/wallets/w-123");
+  });
+});

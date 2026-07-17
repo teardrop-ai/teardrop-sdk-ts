@@ -2,10 +2,11 @@ import type { HttpTransport } from "./transport";
 import { ValidationError } from "./errors";
 import type {
   CreateScheduledRunRequest,
-  Page,
   ScheduledRun,
-  ScheduledRunResult,
   UpdateScheduledRunRequest,
+  ScheduleDeletedResponse,
+  ScheduledRunResultsResponse,
+  ScheduledRunResultItem,
 } from "./types";
 import { parseListResponse } from "./utils/parseListResponse";
 
@@ -49,8 +50,8 @@ export class SchedulesModule {
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.http.request<void>(
+  async delete(id: string): Promise<ScheduleDeletedResponse> {
+    return this.http.request<ScheduleDeletedResponse>(
       "DELETE",
       `/agent/schedules/${encodeURIComponent(id)}`,
     );
@@ -59,7 +60,7 @@ export class SchedulesModule {
   async runs(
     id: string,
     params?: { limit?: number; cursor?: string },
-  ): Promise<Page<ScheduledRunResult>> {
+  ): Promise<ScheduledRunResultsResponse> {
     const data = await this.http.request<unknown>(
       "GET",
       `/agent/schedules/${encodeURIComponent(id)}/runs`,
@@ -70,7 +71,7 @@ export class SchedulesModule {
         },
       },
     );
-    const parsed = parseListResponse<ScheduledRunResult>(data, {
+    const parsed = parseListResponse<ScheduledRunResultItem>(data, {
       container: "items",
     });
     return { items: parsed.items, next_cursor: parsed.nextCursor };

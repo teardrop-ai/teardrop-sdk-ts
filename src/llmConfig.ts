@@ -1,8 +1,8 @@
 import type { HttpTransport } from "./transport";
 import type {
-  OrgLlmConfig,
+  LlmConfigResponse,
+  LlmConfigDeletedResponse,
   SetLlmConfigRequest,
-  MODELS_BY_PROVIDER,
 } from "./types";
 import { MODELS_BY_PROVIDER as MODELS } from "./types";
 
@@ -10,12 +10,12 @@ export class LlmModule {
   constructor(private readonly http: HttpTransport) {}
 
   /** Get the org's current LLM configuration. */
-  async get(): Promise<OrgLlmConfig> {
-    return this.http.request<OrgLlmConfig>("GET", "/llm-config");
+  async get(): Promise<LlmConfigResponse> {
+    return this.http.request<LlmConfigResponse>("GET", "/llm-config");
   }
 
   /** Create or update the org's LLM configuration. */
-  async set(data: SetLlmConfigRequest): Promise<OrgLlmConfig> {
+  async set(data: SetLlmConfigRequest): Promise<LlmConfigResponse> {
     // Strip `undefined` to preserve existing server-side values, but keep
     // explicit `null` so the backend can distinguish "omit" from "clear BYOK".
     // `JSON.stringify` preserves `null`, so no custom replacer is needed.
@@ -23,7 +23,7 @@ export class LlmModule {
     for (const [k, v] of Object.entries(data)) {
       if (v !== undefined) body[k] = v;
     }
-    return this.http.request<OrgLlmConfig>("PUT", "/llm-config", { body });
+    return this.http.request<LlmConfigResponse>("PUT", "/llm-config", { body });
   }
 
   /**
@@ -34,13 +34,13 @@ export class LlmModule {
    */
   async clearApiKey(
     data: Omit<SetLlmConfigRequest, "api_key">,
-  ): Promise<OrgLlmConfig> {
+  ): Promise<LlmConfigResponse> {
     return this.set({ ...data, api_key: null });
   }
 
   /** Delete the org's custom LLM config (revert to global default). */
-  async reset(): Promise<void> {
-    await this.http.request("DELETE", "/llm-config");
+  async reset(): Promise<LlmConfigDeletedResponse> {
+    return this.http.request<LlmConfigDeletedResponse>("DELETE", "/llm-config");
   }
 
   /** Return the list of supported LLM providers (client-side constant). */

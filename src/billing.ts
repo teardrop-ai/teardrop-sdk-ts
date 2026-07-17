@@ -12,6 +12,7 @@ import type {
   StripeTopupStatusResponse,
   UsdcTopupRequest,
   UsdcTopupRequirements,
+  UsdcTopupResponse,
 } from "./types";
 import { parseListResponse } from "./utils/parseListResponse";
 
@@ -115,8 +116,8 @@ export class BillingModule {
   /** Submit on-chain USDC topup. */
   async topupUsdc(
     data: UsdcTopupRequest,
-  ): Promise<{ credited_usdc: number }> {
-    return this.http.request<{ credited_usdc: number }>(
+  ): Promise<UsdcTopupResponse> {
+    return this.http.request<UsdcTopupResponse>(
       "POST",
       "/billing/topup/usdc",
       { body: data },

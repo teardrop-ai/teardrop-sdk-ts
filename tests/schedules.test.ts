@@ -180,9 +180,10 @@ describe("SchedulesModule.delete", () => {
   });
 
   it("calls DELETE /agent/schedules/:id", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
 
-    await module.delete("sched-123");
+    const result = await module.delete("sched-123");
+    expect(result).toEqual({ status: "deleted" });
 
     expect(http.request).toHaveBeenCalledWith(
       "DELETE",

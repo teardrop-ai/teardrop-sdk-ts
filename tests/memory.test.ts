@@ -1,18 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryModule } from "../src/memory";
 import type { HttpTransport } from "../src/transport";
-import type { MemoryEntry, MemoryListResponse } from "../src/types";
+import type {
+  MemoryListItem,
+  MemoryCreatedResponse,
+  MemoryDeletedResponse,
+  MemoryListResponse,
+} from "../src/types";
 
-const ENTRY: MemoryEntry = {
+const ENTRY: MemoryListItem = {
   id: "mem-123",
   content: "User likes coffee",
   source_run_id: "run-456",
   created_at: "2026-01-01T00:00:00Z",
 };
 
+const CREATED: MemoryCreatedResponse = {
+  id: "mem-123",
+  content: "User likes coffee",
+  created_at: "2026-01-01T00:00:00Z",
+};
+
 const LIST_RESPONSE: MemoryListResponse = {
-  memories: [ENTRY],
+  items: [ENTRY],
   next_cursor: "page-2",
+  total: 1,
 };
 
 function makeMockHttp() {
@@ -54,19 +66,21 @@ describe("MemoryModule", () => {
 
   describe("create", () => {
     it("calls POST /memories", async () => {
-      vi.mocked(http.request).mockResolvedValue(ENTRY);
+      vi.mocked(http.request).mockResolvedValue(CREATED);
       const result = await module.create({ content: "New memory" });
       expect(http.request).toHaveBeenCalledWith("POST", "/memories", {
         body: { content: "New memory" },
       });
-      expect(result).toEqual(ENTRY);
+      expect(result).toEqual(CREATED);
     });
   });
 
   describe("delete", () => {
     it("calls DELETE /memories/:id", async () => {
-      vi.mocked(http.request).mockResolvedValue(undefined);
-      await module.delete("mem-123");
+      const mockDeleted: MemoryDeletedResponse = { status: "deleted" };
+      vi.mocked(http.request).mockResolvedValue(mockDeleted);
+      const result = await module.delete("mem-123");
+      expect(result).toEqual(mockDeleted);
       expect(http.request).toHaveBeenCalledWith("DELETE", "/memories/mem-123");
     });
   });

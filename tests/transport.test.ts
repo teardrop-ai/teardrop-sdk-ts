@@ -50,6 +50,14 @@ describe("HttpTransport — error mapping", () => {
     await expect(transport.request("GET", "/")).resolves.toEqual({ ok: true });
   });
 
+  it("resolves on 201 Created and returns JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ created: true }, 201)),
+    );
+    await expect(transport.request("POST", "/")).resolves.toEqual({ created: true });
+  });
+
   it("throws AuthenticationError on 401", async () => {
     vi.stubGlobal(
       "fetch",
