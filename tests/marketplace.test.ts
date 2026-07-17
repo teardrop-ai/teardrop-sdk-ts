@@ -12,6 +12,7 @@ import type {
   MarketplaceAuthorConfigResponse,
   MarketplaceEarningEntry,
   MarketplaceSubscriptionItem,
+  UnsubscribeResponse,
 } from "../src/types";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
