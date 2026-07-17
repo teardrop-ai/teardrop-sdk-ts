@@ -61,7 +61,7 @@ export class AgentModule {
   }
 
   /**
-   * ListStored decision records for the authenticated org (newest first, cursor-paginated).
+   * List stored decision records for the authenticated org (newest first, cursor-paginated).
    */
   async decisions(params?: {
     limit?: number;
