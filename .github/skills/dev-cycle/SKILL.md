@@ -26,7 +26,7 @@ Use existing repo skills instead of recreating them:
 - Keep the user as the decision maker. Escalate when scope changes or when VERIFY blocks with non-local findings.
 - Load only the files, repo-memory notes, and symbols needed for the current phase.
 - Treat live repo code as primary truth. Treat `/memories/repo/` as secondary and verify before relying on it.
-- Treat `notes/03_SDK_HANDOFF.md` as documentation of the remote API contract this repo implements — it was written directly for this TypeScript SDK, so names/casing already match; still verify current behavior against live code since the doc accumulates dated deltas over time.
+- Treat [spec/openapi.json](spec/openapi.json) and [spec/events.schema.json](spec/events.schema.json) as the authoritative remote API contract this repo implements; treat `docs/*.md` (see README.md's Documentation table) as the SDK-usage documentation layered on top — still verify current behavior against live code.
 - Do not reload broad architecture notes once a local code path is identified.
 - Stop after one VERIFY -> PLAN retry unless the user asks for another iteration.
 
@@ -72,7 +72,7 @@ Purpose: gather only the evidence needed to make a correct plan.
 
 Use `deep-researcher` when:
 - the behavior spans multiple resource modules or touches shared transport/error-mapping code
-- repo memory or `notes/03_SDK_HANDOFF.md` makes a claim that needs checking against live code
+- repo memory or a `docs/*.md` guide makes a claim that needs checking against `spec/openapi.json`, `spec/events.schema.json`, or live code
 - external docs (`fetch`/`Response` streaming, JWT/SIWE specs, Vitest APIs) are required
 
 Actions:
