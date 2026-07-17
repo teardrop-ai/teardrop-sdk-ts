@@ -101,19 +101,19 @@ export interface AgentTool {
 export interface AgentDecisionRecord {
   id: string;
   run_id: string;
-  action: string;
-  confidence: number | null;
   outcome: number;
-  outcome_source: string;
-  reasoning: string;
-  task_class: string;
-  tool_names: string[];
   created_at: string;
+  action?: string;
+  confidence?: number | null;
+  outcome_source?: string;
+  reasoning?: string;
+  task_class?: string;
+  tool_names?: string[];
 }
 
 export interface AgentDecisionListResponse {
   items: AgentDecisionRecord[];
-  next_cursor: string | null;
+  next_cursor?: string | null;
 }
 
 export interface ToolExclusionRequest {
