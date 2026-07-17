@@ -28,8 +28,6 @@ describe("WalletsModule.list", () => {
     const items: Wallet[] = [
       {
         id: "w-1",
-        org_id: "org-1",
-        user_id: "u-1",
         address: "0xabc",
         chain_id: 8453,
         is_primary: true,
