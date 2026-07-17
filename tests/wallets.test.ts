@@ -28,8 +28,6 @@ describe("WalletsModule.list", () => {
     const items: Wallet[] = [
       {
         id: "w-1",
-        org_id: "org-1",
-        user_id: "u-1",
         address: "0xabc",
         chain_id: 8453,
         is_primary: true,
@@ -46,5 +44,22 @@ describe("WalletsModule.list", () => {
     vi.mocked(http.request).mockResolvedValue([]);
     const result = await wallets.list();
     expect(result).toEqual([]);
+  });
+});
+
+describe("WalletsModule.delete", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let wallets: WalletsModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    wallets = new WalletsModule(http);
+  });
+
+  it("sends DELETE on /wallets/:id and returns status deleted", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
+    const result = await wallets.delete("w-123");
+    expect(result).toEqual({ status: "deleted" });
+    expect(http.request).toHaveBeenCalledWith("DELETE", "/wallets/w-123");
   });
 });

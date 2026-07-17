@@ -472,3 +472,74 @@ describe("AgentModule.tools", () => {
     expect(result).toEqual([]);
   });
 });
+
+// ── decisions & tool exclusions ──────────────────────────────────────────────
+
+describe("AgentModule — decisions and tool exclusions", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let agent: AgentModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    agent = new AgentModule(http);
+  });
+
+  it("calls GET /agent/decisions with pagination params", async () => {
+    const mockReponse = {
+      items: [
+        {
+          id: "dec-1",
+          run_id: "run-1",
+          action: "Search",
+          confidence: 0.95,
+          outcome: 1,
+          outcome_source: "feedback",
+          reasoning: "User asked for results",
+          task_class: "informational",
+          tool_names: ["platform/web_search"],
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+      next_cursor: "cursor-123",
+    };
+    vi.mocked(http.request).mockResolvedValue(mockReponse);
+    const result = await agent.decisions({ limit: 10, cursor: "cursor-abc" });
+    expect(http.request).toHaveBeenCalledWith("GET", "/agent/decisions", {
+      params: { limit: 10, cursor: "cursor-abc" },
+    });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe("dec-1");
+    expect(result.next_cursor).toBe("cursor-123");
+  });
+
+  it("calls GET /agent/tool-exclusions", async () => {
+    const mockResponse = { tool_names: ["web_search"] };
+    vi.mocked(http.request).mockResolvedValue(mockResponse);
+    const result = await agent.listToolExclusions();
+    expect(http.request).toHaveBeenCalledWith("GET", "/agent/tool-exclusions");
+    expect(result.tool_names).toEqual(["web_search"]);
+  });
+
+  it("calls POST /agent/tool-exclusions with tool name", async () => {
+    const mockResponse = { status: "added", tool_name: "web_search" };
+    vi.mocked(http.request).mockResolvedValue(mockResponse);
+    const result = await agent.excludeTool("web_search");
+    expect(http.request).toHaveBeenCalledWith("POST", "/agent/tool-exclusions", {
+      body: { tool_name: "web_search" },
+    });
+    expect(result.status).toBe("added");
+    expect(result.tool_name).toBe("web_search");
+  });
+
+  it("calls DELETE /agent/tool-exclusions/{tool_name}", async () => {
+    const mockResponse = { status: "removed", tool_name: "web_search" };
+    vi.mocked(http.request).mockResolvedValue(mockResponse);
+    const result = await agent.includeTool("web_search");
+    expect(http.request).toHaveBeenCalledWith(
+      "DELETE",
+      "/agent/tool-exclusions/web_search",
+    );
+    expect(result.status).toBe("removed");
+    expect(result.tool_name).toBe("web_search");
+  });
+});

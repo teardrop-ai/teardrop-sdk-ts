@@ -1,5 +1,14 @@
 import type { HttpTransport } from "./transport";
-import type { MeResponse, TokenResponse } from "./types";
+import type {
+  MeResponse,
+  TokenResponse,
+  AuthMeResponse,
+  SiweNonceResponse,
+  VerifyEmailResponse,
+  ResendVerificationResponse,
+  CreateInviteRequest,
+  CreateInviteResponse,
+} from "./types";
 
 export class AuthModule {
   constructor(private readonly http: HttpTransport) {}
@@ -55,13 +64,13 @@ export class AuthModule {
   }
 
   /** Return decoded token claims for the current session, plus org_name from the database. */
-  async me(): Promise<MeResponse> {
-    return this.http.request<MeResponse>("GET", "/auth/me");
+  async me(): Promise<AuthMeResponse> {
+    return this.http.request<AuthMeResponse>("GET", "/auth/me");
   }
 
   /** Fetch a single-use nonce for SIWE sign-in. */
-  async siweNonce(): Promise<{ nonce: string }> {
-    return this.http.request<{ nonce: string }>("GET", "/auth/siwe/nonce", {
+  async siweNonce(): Promise<SiweNonceResponse> {
+    return this.http.request<SiweNonceResponse>("GET", "/auth/siwe/nonce", {
       auth: false,
     });
   }
@@ -86,8 +95,8 @@ export class AuthModule {
   }
 
   /** Verify email with one-time token. */
-  async verifyEmail(token: string): Promise<{ verified: boolean }> {
-    return this.http.request<{ verified: boolean }>(
+  async verifyEmail(token: string): Promise<VerifyEmailResponse> {
+    return this.http.request<VerifyEmailResponse>(
       "GET",
       "/auth/verify-email",
       { params: { token }, auth: false },
@@ -95,8 +104,8 @@ export class AuthModule {
   }
 
   /** Resend verification email. */
-  async resendVerification(email: string): Promise<{ message: string }> {
-    return this.http.request<{ message: string }>(
+  async resendVerification(email: string): Promise<ResendVerificationResponse> {
+    return this.http.request<ResendVerificationResponse>(
       "POST",
       "/auth/resend-verification",
       { body: { email }, auth: false },
@@ -104,10 +113,7 @@ export class AuthModule {
   }
 
   /** Create org invite link. */
-  async invite(params: {
-    email?: string;
-    role: "member" | "user";
-  }): Promise<{ token: string; invite_url: string; expires_at: string }> {
-    return this.http.request("POST", "/org/invite", { body: params });
+  async invite(params: CreateInviteRequest): Promise<CreateInviteResponse> {
+    return this.http.request<CreateInviteResponse>("POST", "/org/invite", { body: params });
   }
 }

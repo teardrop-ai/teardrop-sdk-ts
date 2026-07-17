@@ -26,6 +26,44 @@ export interface MeResponse extends JwtPayloadBase {
   org_name: string;
 }
 
+export interface AuthMeResponse {
+  user_id: string;
+  org_id: string;
+  role: string;
+  auth_method: string;
+  email: string;
+  address?: string | null;
+  chain_id?: number | null;
+  org_name?: string | null;
+}
+
+export interface SiweNonceResponse {
+  nonce: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  message: string;
+}
+
+export interface VerifyEmailResponse {
+  verified: true;
+}
+
+export interface CreateInviteRequest {
+  email?: string | null;
+  role?: string;
+}
+
+export interface CreateInviteResponse {
+  expires_at: string;
+  invite_url: string | null;
+  token: string;
+}
+
 export interface JwtPayloadSiwe extends JwtPayloadBase {
   auth_method: "siwe";
   address: string;
@@ -58,6 +96,42 @@ export interface AgentTool {
   source: "platform" | "org" | "marketplace";
   /** How the tool is made available to the agent. */
   access_mode: "included" | "subscribed";
+}
+
+export interface AgentDecisionRecord {
+  id: string;
+  run_id: string;
+  outcome: number;
+  created_at: string;
+  action?: string;
+  confidence?: number | null;
+  outcome_source?: string;
+  reasoning?: string;
+  task_class?: string;
+  tool_names?: string[];
+}
+
+export interface AgentDecisionListResponse {
+  items: AgentDecisionRecord[];
+  next_cursor?: string | null;
+}
+
+export interface ToolExclusionRequest {
+  tool_name: string;
+}
+
+export interface ToolExclusionActionResponse {
+  status: "added";
+  tool_name: string;
+}
+
+export interface ToolExclusionListResponse {
+  tool_names: string[];
+}
+
+export interface ToolExclusionRemovedResponse {
+  status: "removed";
+  tool_name: string;
 }
 
 // ── Envelope responses ────────────────────────────────────────────────────────
@@ -228,13 +302,13 @@ export interface UpdateScheduledRunRequest {
   callback_url?: string | null;
 }
 
-export interface ScheduledRun {
+export interface ScheduledRunItem {
   id: string;
   org_id: string;
   user_id: string;
   name: string;
   prompt: string;
-  schedule_kind: "interval";
+  schedule_kind: string;
   interval_seconds: number;
   enabled: boolean;
   callback_url: string | null;
@@ -245,17 +319,33 @@ export interface ScheduledRun {
   updated_at: string;
 }
 
-export interface ScheduledRunResult {
+export interface ScheduledRunListResponse {
+  items: ScheduledRunItem[];
+}
+
+export interface ScheduleDeletedResponse {
+  status: "deleted";
+}
+
+export interface ScheduledRunResultItem {
   id: string;
   schedule_id: string;
   org_id: string;
   run_id: string;
-  status: "completed" | "failed" | "timeout" | "skipped";
-  output_text: string;
+  status: string;
+  output_text: string | null;
   cost_usdc: number;
-  error: string;
+  error: string | null;
   created_at: string;
 }
+
+export interface ScheduledRunResultsResponse {
+  items: ScheduledRunResultItem[];
+  next_cursor: string | null;
+}
+
+export type ScheduledRun = ScheduledRunItem;
+export type ScheduledRunResult = ScheduledRunResultItem;
 
 export interface CreateEventTriggerRequest {
   name: string;
@@ -270,48 +360,69 @@ export interface UpdateEventTriggerRequest {
   callback_url?: string | null;
 }
 
-export interface EventTrigger {
+export interface EventTriggerItem {
   id: string;
   org_id: string;
   user_id: string;
   name: string;
   prompt: string;
-  schedule_kind: "event";
+  schedule_kind: string;
   enabled: boolean;
   callback_url: string | null;
   consecutive_failures: number;
   last_run_at: string | null;
   created_at: string;
   updated_at: string;
+  trigger_token: string | null;
+  event_path: string | null;
 }
 
-export interface EventTriggerWithSecret extends EventTrigger {
-  trigger_token: string;
-  event_path: string;
-  secret: string;
-}
-
-export interface RotateEventTriggerSecretResponse {
+export interface EventTriggerCreatedResponse {
   id: string;
+  org_id: string;
+  user_id: string;
+  name: string;
+  prompt: string;
+  schedule_kind: string;
+  enabled: boolean;
+  callback_url: string | null;
+  consecutive_failures: number;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+  trigger_token: string | null;
+  event_path: string | null;
   secret: string;
 }
 
-export interface EventDispatchAccepted {
+export interface EventTriggerListResponse {
+  items: EventTriggerItem[];
+}
+
+export interface EventDispatchResponse {
   run_id: string;
   status: "accepted" | "duplicate";
   schedule_id: string;
   result_path: string;
 }
 
+export type EventTrigger = EventTriggerItem;
+export type EventTriggerWithSecret = EventTriggerCreatedResponse;
+export type EventDispatchAccepted = EventDispatchResponse;
+
+export interface RotateEventTriggerSecretResponse {
+  id: string;
+  secret: string;
+}
+
 // ── Org Webhook Tools ────────────────────────────────────────────────────────
 
-export interface OrgTool {
+export interface OrgToolResponse {
   id: string;
   org_id: string;
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
-  /** Optional; omitted if not set. */
   output_schema?: Record<string, unknown>;
   webhook_url: string;
   webhook_method: string;
@@ -322,6 +433,12 @@ export interface OrgTool {
   base_price_usdc: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export type OrgTool = OrgToolResponse;
+
+export interface ToolDeletedResponse {
+  status: "deleted";
 }
 
 export interface CreateOrgToolRequest {
@@ -360,18 +477,24 @@ export interface UpdateOrgToolRequest {
 
 export type McpServerAuthType = "none" | "bearer" | "header";
 
-export interface OrgMcpServer {
+export interface McpServerResponse {
   id: string;
   org_id: string;
   name: string;
   url: string;
-  auth_type: McpServerAuthType;
+  auth_type: string;
   has_auth: boolean;
   auth_header_name: string | null;
   is_active: boolean;
   timeout_seconds: number;
   created_at: string;
   updated_at: string;
+}
+
+export type OrgMcpServer = McpServerResponse;
+
+export interface McpServerDeletedResponse {
+  status: "deleted";
 }
 
 export interface CreateMcpServerRequest {
@@ -399,21 +522,30 @@ export interface McpToolDefinition {
   input_schema: Record<string, unknown>;
 }
 
-export interface DiscoverMcpToolsResponse {
+export interface McpDiscoverResponse {
   server_id: string;
-  server_name?: string;
-  tools: McpToolDefinition[];
-  discovered_at?: string;
+  tools: Record<string, unknown>[];
 }
+
+export type DiscoverMcpToolsResponse = McpDiscoverResponse;
 
 // ── Memory ───────────────────────────────────────────────────────────────────
 
-export interface MemoryEntry {
+export interface MemoryListItem {
   id: string;
   content: string;
-  /** UUID of the run this memory was extracted from (if auto-extracted). */
-  source_run_id?: string;
+  source_run_id: string | null;
   created_at: string;
+}
+
+export interface MemoryCreatedResponse {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
+export interface MemoryDeletedResponse {
+  status: "deleted";
 }
 
 export interface StoreMemoryRequest {
@@ -421,26 +553,57 @@ export interface StoreMemoryRequest {
 }
 
 export interface MemoryListResponse {
-  memories: MemoryEntry[];
-  /** Pagination cursor; null = last page. */
+  items: MemoryListItem[];
   next_cursor: string | null;
+  total: number;
+}
+
+/** @deprecated Use MemoryListItem instead. */
+export interface MemoryEntry {
+  id: string;
+  content: string;
+  source_run_id?: string;
+  created_at: string;
 }
 
 // ── Wallets ──────────────────────────────────────────────────────────────────
 
-export interface Wallet {
+export interface WalletItem {
   id: string;
-  org_id: string;
-  user_id: string;
   address: string;
   chain_id: number;
   is_primary: boolean;
   created_at: string;
 }
 
+export type Wallet = WalletItem;
+
+export interface WalletDeletedResponse {
+  status: "deleted";
+}
+
 export interface LinkWalletRequest {
   siwe_message: string;
   siwe_signature: string;
+}
+
+// ── Agent Wallets ────────────────────────────────────────────────────────────
+
+export interface AgentWalletResponse {
+  id: string;
+  address: string;
+  chain_id: number;
+  wallet_type: string;
+  is_active: boolean;
+  balance_usdc?: number | null;
+  balance_error?: string | null;
+  created_at: string;
+}
+
+export type AgentWallet = AgentWalletResponse;
+
+export interface AgentWalletDeactivatedResponse {
+  status: "deactivated";
 }
 
 // ── Billing ──────────────────────────────────────────────────────────────────
@@ -457,22 +620,33 @@ export interface BillingPricingResponse {
   updated_at: string;
 }
 
-export interface CreditBalance {
+export interface BillingBalanceResponse {
   org_id: string;
   balance_usdc: number;
   spending_limit_usdc: number;
+  spending_limit_active: boolean;
   is_paused: boolean;
   daily_spend_usdc: number;
 }
 
-export interface BillingHistoryEntry {
+export type CreditBalance = BillingBalanceResponse;
+
+export interface BillingHistoryItem {
+  id: string;
   run_id: string;
-  user_id: string;
-  amount_usdc: number;
-  method: "credit" | "x402";
-  status: "pending" | "settled" | "failed";
+  tokens_in: number;
+  tokens_out: number;
+  tool_calls: number;
+  tool_names: string[];
+  duration_ms: number;
+  cost_usdc: number;
+  platform_fee_usdc: number;
+  settlement_tx: string;
+  settlement_status: string;
   created_at: string;
 }
+
+export type BillingHistoryEntry = BillingHistoryItem;
 
 export interface Invoice {
   run_id: string;
@@ -498,24 +672,37 @@ export interface StripeTopupRequest {
   return_url: string;
 }
 
-export interface StripeTopupResponse {
+export interface StripeTopupSessionResponse {
   client_secret: string;
   session_id: string;
 }
 
-export interface StripeTopupStatusResponse {
-  status: "open" | "complete" | "expired";
-  new_balance_fmt?: string;
+export type StripeTopupResponse = StripeTopupSessionResponse;
+
+export interface StripeSessionStatusResponse {
+  status: string;
+  new_balance_fmt?: string | null;
 }
 
-export interface UsdcTopupRequirements {
+export type StripeTopupStatusResponse = StripeSessionStatusResponse;
+
+export interface UsdcTopupRequirementsResponse {
   accepts: Record<string, unknown>[];
   x402Version: number;
 }
 
+export type UsdcTopupRequirements = UsdcTopupRequirementsResponse;
+
 export interface UsdcTopupRequest {
   amount_usdc: number;
   payment_header: string;
+}
+
+export interface UsdcTopupResponse {
+  amount_usdc: number;
+  balance_usdc: number;
+  status: "credited";
+  tx_hash: string;
 }
 
 // ── Usage ────────────────────────────────────────────────────────────────────
@@ -530,31 +717,50 @@ export interface UsageSummary {
 
 // ── Marketplace ──────────────────────────────────────────────────────────────
 
-export interface MarketplaceTool {
-  /** Qualified tool name: "{org_slug}/{tool_name}" or "platform/{tool_name}" for Teardrop built-ins. */
+export interface MarketplaceToolSummary {
   name: string;
+  qualified_name: string;
+  tool_name: string;
+  display_name: string;
   description: string;
+  short_description: string;
   input_schema: Record<string, unknown>;
   cost_usdc: number;
-  /** Author org display name (e.g. "Teardrop" for platform tools). */
-  author: string;
-  /** Author org slug (e.g. "platform" for Teardrop built-in tools). */
-  author_slug: string;
-  /** Backend-supplied tool type tag (e.g. "webhook", "mcp", "platform"). */
   tool_type: string;
+  category: string;
+  total_calls: number;
+  reputation_score: number;
+  health_status: string;
+  is_healthy: boolean;
+  author: string;
+  author_slug: string;
 }
 
-export interface AuthorConfig {
+export type MarketplaceTool = MarketplaceToolSummary;
+
+export interface MarketplaceCatalogResponse {
+  tools: MarketplaceToolSummary[];
+  next_cursor: string | null;
+}
+
+export interface MarketplaceAuthorConfigResponse {
   org_id: string;
-  settlement_wallet: string;
-  created_at: string;
-  updated_at: string;
+  settlement_wallet: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
-export interface EarningsEntry {
+export type AuthorConfig = MarketplaceAuthorConfigResponse;
+
+export interface MarketplaceBalanceResponse {
+  org_id: string;
+  balance_usdc: number;
+  pending_usdc?: number;
+}
+
+export interface MarketplaceEarningEntry {
   id: string;
   tool_name: string;
-  /** Total amount charged to the caller (atomic USDC). */
   total_cost_usdc: number;
   caller_org_id: string;
   author_share_usdc: number;
@@ -563,11 +769,48 @@ export interface EarningsEntry {
   created_at: string;
 }
 
+export type EarningsEntry = MarketplaceEarningEntry;
+
+export interface MarketplaceEarningsResponse {
+  earnings: MarketplaceEarningEntry[];
+  next_cursor: string | null;
+}
+
 export interface WithdrawRequest {
   amount_usdc: number;
 }
 
-export interface MarketplaceSubscription {
+export interface MarketplaceWithdrawalResponse {
+  id: string;
+  org_id: string;
+  amount_usdc: number;
+  wallet: string;
+  status: string;
+  created_at: string;
+}
+
+export interface MarketplaceWithdrawalHistoryItem {
+  id: string;
+  amount_usdc: number;
+  wallet: string;
+  status: string;
+  tx_hash: string | null;
+  settled_at: string | null;
+  created_at: string;
+}
+
+export interface MarketplaceWithdrawalsListResponse {
+  withdrawals: MarketplaceWithdrawalHistoryItem[];
+  next_cursor: string | null;
+}
+
+export interface MarketplaceSubscriptionItem {
+  id: string;
+  qualified_tool_name: string;
+  subscribed_at: string;
+}
+
+export interface MarketplaceSubscriptionResponse {
   id: string;
   org_id: string;
   qualified_tool_name: string;
@@ -575,25 +818,43 @@ export interface MarketplaceSubscription {
   subscribed_at: string;
 }
 
+export type MarketplaceSubscription = MarketplaceSubscriptionResponse;
+
+export interface MarketplaceSubscriptionListResponse {
+  subscriptions: MarketplaceSubscriptionItem[];
+}
+
+export interface UnsubscribeResponse {
+  status: "unsubscribed";
+  subscription_id: string;
+}
+
 // ── LLM Config ───────────────────────────────────────────────────────────────
 
 export type ProviderType = "anthropic" | "openai" | "google" | "openrouter";
 export type RoutingPreference = "default" | "cost" | "speed" | "quality";
 
-export interface OrgLlmConfig {
-  org_id: string;
+export interface LlmConfigDeletedResponse {
+  status: "deleted";
+}
+
+export interface LlmConfigResponse {
+  org_id: string | null;
   provider: string;
   model: string;
-  has_api_key: boolean;
+  configured: boolean;
+  has_api_key: boolean | null;
   api_base: string | null;
-  max_tokens: number;
-  temperature: number;
-  timeout_seconds: number;
-  routing_preference: string;
-  is_byok: boolean;
-  created_at: string;
-  updated_at: string;
+  max_tokens: number | null;
+  temperature: number | null;
+  timeout_seconds: number | null;
+  routing_preference: string | null;
+  is_byok: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
+
+export type OrgLlmConfig = LlmConfigResponse;
 
 export interface SetLlmConfigRequest {
   provider: ProviderType;
@@ -650,54 +911,86 @@ export interface ModelBenchmarksResponse {
 
 // ── A2A Delegation ───────────────────────────────────────────────────────────
 
-export interface AddTrustedAgentRequest {
+export interface OrgCreateA2AAgentRequest {
   agent_url: string;
-  label?: string;
+  label?: string | null;
   max_cost_usdc?: number;
   require_x402?: boolean;
   jwt_forward?: boolean;
 }
 
+export interface OrgA2AAgentResponse {
+  id: string;
+  org_id: string;
+  agent_url: string;
+  label: string | null;
+  max_cost_usdc: number;
+  require_x402: boolean;
+  jwt_forward: boolean;
+}
+
+export interface OrgA2AAgentListItem {
+  id: string;
+  agent_url: string;
+  label: string | null;
+  max_cost_usdc: number;
+  require_x402: boolean;
+  jwt_forward: boolean;
+  created_at: string | null;
+}
+
+export interface OrgA2AAgentDeletedResponse {
+  deleted: string;
+}
+
+export interface A2ADelegationEvent {
+  id: string;
+  run_id: string;
+  agent_url: string;
+  agent_name: string | null;
+  task_status: string;
+  cost_usdc: number;
+  billing_method: string;
+  settlement_tx: string | null;
+  error: string | null;
+  created_at: string | null;
+}
+
+/** @deprecated Use OrgCreateA2AAgentRequest instead. */
+export type AddTrustedAgentRequest = OrgCreateA2AAgentRequest;
+
+/** @deprecated Use OrgA2AAgentResponse or OrgA2AAgentListItem instead. */
 export interface TrustedAgent {
   id: string;
-  /** Present on create response; absent from list response. */
   org_id?: string;
   agent_url: string;
   label: string | null;
   max_cost_usdc: number;
   require_x402: boolean;
   jwt_forward: boolean;
-  /** Present on list response; absent from create response. */
   created_at?: string;
 }
 
 // ── Agent Wallets ────────────────────────────────────────────────────────────
 
-export interface AgentWallet {
-  id: string;
-  org_id: string;
-  address: string;
-  network: string;
-  is_active: boolean;
-  created_at: string;
-}
-
 // ── Org Credentials ─────────────────────────────────────────────────────────
 
-export interface OrgCredentialsEntry {
+export interface OrgCredentialItem {
   client_id: string;
   created_at: string;
 }
 
-export interface OrgCredentialsResponse {
-  credentials: OrgCredentialsEntry[];
-}
-
-/** client_secret is returned exactly once — store it immediately. */
-export interface RegenerateCredentialsResponse {
+export interface OrgCredentialRegenerateResponse {
   client_id: string;
   client_secret: string;
   created_at: string;
+}
+
+export type OrgCredentialsEntry = OrgCredentialItem;
+export type RegenerateCredentialsResponse = OrgCredentialRegenerateResponse;
+
+export interface OrgCredentialsResponse {
+  credentials: OrgCredentialsEntry[];
 }
 
 // ── Agent Card ───────────────────────────────────────────────────────────────

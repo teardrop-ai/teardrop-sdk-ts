@@ -1,5 +1,13 @@
 import type { HttpTransport } from "./transport";
-import type { AgentRunRequest, AgentTool, SseEvent } from "./types";
+import type {
+  AgentRunRequest,
+  AgentTool,
+  SseEvent,
+  AgentDecisionListResponse,
+  ToolExclusionListResponse,
+  ToolExclusionActionResponse,
+  ToolExclusionRemovedResponse,
+} from "./types";
 import { parseSseStream } from "./utils/parseSseStream";
 import { parseListResponse } from "./utils/parseListResponse";
 
@@ -50,5 +58,46 @@ export class AgentModule {
   async tools(): Promise<AgentTool[]> {
     const data = await this.http.request<unknown>("GET", "/agent/tools");
     return parseListResponse<AgentTool>(data, { container: "tools" }).items;
+  }
+
+  /**
+   * List stored decision records for the authenticated org (newest first, cursor-paginated).
+   */
+  async decisions(params?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<AgentDecisionListResponse> {
+    return this.http.request<AgentDecisionListResponse>("GET", "/agent/decisions", {
+      params: {
+        limit: params?.limit,
+        cursor: params?.cursor,
+      },
+    });
+  }
+
+  /**
+   * List the authenticated org's persisted tool exclusions.
+   */
+  async listToolExclusions(): Promise<ToolExclusionListResponse> {
+    return this.http.request<ToolExclusionListResponse>("GET", "/agent/tool-exclusions");
+  }
+
+  /**
+   * Persist a tool exclusion for the authenticated org.
+   */
+  async excludeTool(toolName: string): Promise<ToolExclusionActionResponse> {
+    return this.http.request<ToolExclusionActionResponse>("POST", "/agent/tool-exclusions", {
+      body: { tool_name: toolName },
+    });
+  }
+
+  /**
+   * Remove a persisted tool exclusion for the authenticated org.
+   */
+  async includeTool(toolName: string): Promise<ToolExclusionRemovedResponse> {
+    return this.http.request<ToolExclusionRemovedResponse>(
+      "DELETE",
+      `/agent/tool-exclusions/${encodeURIComponent(toolName)}`,
+    );
   }
 }

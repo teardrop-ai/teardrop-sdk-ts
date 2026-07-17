@@ -1,5 +1,10 @@
 import type { HttpTransport } from "./transport";
-import type { MemoryEntry, MemoryListResponse, StoreMemoryRequest } from "./types";
+import type {
+  MemoryCreatedResponse,
+  MemoryDeletedResponse,
+  MemoryListResponse,
+  StoreMemoryRequest,
+} from "./types";
 
 export class MemoryModule {
   constructor(private readonly http: HttpTransport) {}
@@ -13,12 +18,12 @@ export class MemoryModule {
     });
   }
 
-  async create(data: StoreMemoryRequest): Promise<MemoryEntry> {
-    return this.http.request<MemoryEntry>("POST", "/memories", { body: data });
+  async create(data: StoreMemoryRequest): Promise<MemoryCreatedResponse> {
+    return this.http.request<MemoryCreatedResponse>("POST", "/memories", { body: data });
   }
 
-  async delete(id: string): Promise<void> {
-    await this.http.request<void>(
+  async delete(id: string): Promise<MemoryDeletedResponse> {
+    return this.http.request<MemoryDeletedResponse>(
       "DELETE",
       `/memories/${encodeURIComponent(id)}`,
     );

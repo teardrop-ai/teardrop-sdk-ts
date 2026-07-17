@@ -1,12 +1,16 @@
 import type { HttpTransport } from "./transport";
 import type {
-  AuthorConfig,
-  EarningsEntry,
-  MarketplaceSubscription,
-  MarketplaceTool,
+  MarketplaceAuthorConfigResponse,
+  MarketplaceBalanceResponse,
+  MarketplaceCatalogResponse,
+  MarketplaceEarningsResponse,
+  MarketplaceSubscriptionListResponse,
+  MarketplaceSubscriptionResponse,
+  MarketplaceWithdrawalResponse,
+  MarketplaceWithdrawalsListResponse,
+  UnsubscribeResponse,
   WithdrawRequest,
 } from "./types";
-import { parseListResponse } from "./utils/parseListResponse";
 
 export class MarketplaceModule {
   constructor(private readonly http: HttpTransport) {}
@@ -17,8 +21,8 @@ export class MarketplaceModule {
     sort?: "name" | "price_asc" | "price_desc";
     limit?: number;
     cursor?: string;
-  }): Promise<{ tools: MarketplaceTool[]; next_cursor: string | null }> {
-    return this.http.request<{ tools: MarketplaceTool[]; next_cursor: string | null }>(
+  }): Promise<MarketplaceCatalogResponse> {
+    return this.http.request<MarketplaceCatalogResponse>(
       "GET",
       "/marketplace/catalog",
       {
@@ -36,8 +40,8 @@ export class MarketplaceModule {
   /** Create or update author payout config. */
   async setAuthorConfig(data: {
     settlement_wallet: string;
-  }): Promise<AuthorConfig> {
-    return this.http.request<AuthorConfig>(
+  }): Promise<MarketplaceAuthorConfigResponse> {
+    return this.http.request<MarketplaceAuthorConfigResponse>(
       "POST",
       "/marketplace/author-config",
       { body: data },
@@ -45,16 +49,16 @@ export class MarketplaceModule {
   }
 
   /** Get author payout config. */
-  async getAuthorConfig(): Promise<AuthorConfig> {
-    return this.http.request<AuthorConfig>(
+  async getAuthorConfig(): Promise<MarketplaceAuthorConfigResponse> {
+    return this.http.request<MarketplaceAuthorConfigResponse>(
       "GET",
       "/marketplace/author-config",
     );
   }
 
   /** Author earnings balance. */
-  async balance(): Promise<{ balance_usdc: number; pending_usdc: number }> {
-    return this.http.request("GET", "/marketplace/balance");
+  async balance(): Promise<MarketplaceBalanceResponse> {
+    return this.http.request<MarketplaceBalanceResponse>("GET", "/marketplace/balance");
   }
 
   /** Earnings history (cursor-paginated). */
@@ -62,8 +66,8 @@ export class MarketplaceModule {
     limit?: number;
     tool_name?: string;
     cursor?: string;
-  }): Promise<{ earnings: EarningsEntry[]; next_cursor: string | null }> {
-    return this.http.request<{ earnings: EarningsEntry[]; next_cursor: string | null }>(
+  }): Promise<MarketplaceEarningsResponse> {
+    return this.http.request<MarketplaceEarningsResponse>(
       "GET",
       "/marketplace/earnings",
       {
@@ -79,16 +83,16 @@ export class MarketplaceModule {
   /** Request a marketplace earnings payout. */
   async withdraw(
     data: WithdrawRequest,
-  ): Promise<{ id: string; org_id: string; amount_usdc: number; wallet: string; status: string; created_at: string }> {
-    return this.http.request("POST", "/marketplace/withdraw", { body: data });
+  ): Promise<MarketplaceWithdrawalResponse> {
+    return this.http.request<MarketplaceWithdrawalResponse>("POST", "/marketplace/withdraw", { body: data });
   }
 
   /** Withdrawal history (cursor-paginated). */
   async withdrawals(params?: {
     limit?: number;
     cursor?: string;
-  }): Promise<{ withdrawals: unknown[]; next_cursor: string | null }> {
-    return this.http.request<{ withdrawals: unknown[]; next_cursor: string | null }>(
+  }): Promise<MarketplaceWithdrawalsListResponse> {
+    return this.http.request<MarketplaceWithdrawalsListResponse>(
       "GET",
       "/marketplace/withdrawals",
       { params: { limit: params?.limit, cursor: params?.cursor } },
@@ -98,8 +102,8 @@ export class MarketplaceModule {
   /** Subscribe to a marketplace tool by qualified name (org_slug/tool_name). */
   async subscribe(
     qualifiedToolName: string,
-  ): Promise<MarketplaceSubscription> {
-    return this.http.request<MarketplaceSubscription>(
+  ): Promise<MarketplaceSubscriptionResponse> {
+    return this.http.request<MarketplaceSubscriptionResponse>(
       "POST",
       "/marketplace/subscriptions",
       { body: { qualified_tool_name: qualifiedToolName } },
@@ -107,19 +111,16 @@ export class MarketplaceModule {
   }
 
   /** List active subscriptions. */
-  async subscriptions(): Promise<MarketplaceSubscription[]> {
-    const data = await this.http.request<unknown>(
+  async subscriptions(): Promise<MarketplaceSubscriptionListResponse> {
+    return this.http.request<MarketplaceSubscriptionListResponse>(
       "GET",
       "/marketplace/subscriptions",
     );
-    return parseListResponse<MarketplaceSubscription>(data, {
-      container: "subscriptions",
-    }).items;
   }
 
   /** Unsubscribe from a marketplace tool. */
-  async unsubscribe(subscriptionId: string): Promise<void> {
-    await this.http.request<void>(
+  async unsubscribe(subscriptionId: string): Promise<UnsubscribeResponse> {
+    return this.http.request<UnsubscribeResponse>(
       "DELETE",
       `/marketplace/subscriptions/${encodeURIComponent(subscriptionId)}`,
     );

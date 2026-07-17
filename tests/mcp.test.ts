@@ -250,13 +250,14 @@ describe("McpModule.delete", () => {
     module = new McpModule(http);
   });
 
-  it("resolves without a value on 204", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
-    await expect(module.delete("srv-1")).resolves.toBeUndefined();
+  it("resolves and returns status deleted", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
+    const result = await module.delete("srv-1");
+    expect(result).toEqual({ status: "deleted" });
   });
 
   it("calls DELETE /mcp/servers/:id", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
     await module.delete("srv-1");
     expect(http.request).toHaveBeenCalledWith(
       "DELETE",

@@ -139,10 +139,12 @@ describe("ToolsModule.list", () => {
     expect(await module.list()).toEqual([]);
   });
 
-  it("calls GET /tools", async () => {
+  it("calls GET /tools with params", async () => {
     vi.mocked(http.request).mockResolvedValue([]);
-    await module.list();
-    expect(http.request).toHaveBeenCalledWith("GET", "/tools");
+    await module.list({ active_only: false });
+    expect(http.request).toHaveBeenCalledWith("GET", "/tools", {
+      params: { active_only: false },
+    });
   });
 });
 
@@ -218,13 +220,14 @@ describe("ToolsModule.delete", () => {
     module = new ToolsModule(http);
   });
 
-  it("resolves without a value on 204", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
-    await expect(module.delete("tool-123")).resolves.toBeUndefined();
+  it("resolves and returns status deleted", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
+    const result = await module.delete("tool-123");
+    expect(result).toEqual({ status: "deleted" });
   });
 
   it("calls DELETE /tools/:id", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
     await module.delete("tool-123");
     expect(http.request).toHaveBeenCalledWith("DELETE", "/tools/tool-123");
   });

@@ -160,6 +160,28 @@ describe("EventTriggersModule.update", () => {
   });
 });
 
+describe("EventTriggersModule.delete", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let module: EventTriggersModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    module = new EventTriggersModule(http);
+  });
+
+  it("calls DELETE /agent/event-triggers/:id", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "deleted" });
+
+    const result = await module.delete("evt-trigger-123");
+    expect(result).toEqual({ status: "deleted" });
+
+    expect(http.request).toHaveBeenCalledWith(
+      "DELETE",
+      "/agent/event-triggers/evt-trigger-123",
+    );
+  });
+});
+
 describe("EventTriggersModule.rotateSecret", () => {
   let http: ReturnType<typeof makeMockHttp>;
   let module: EventTriggersModule;

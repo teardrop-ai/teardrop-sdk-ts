@@ -7,10 +7,12 @@ import { NotFoundError } from "../src/errors";
 import { MarketplaceModule } from "../src/marketplace";
 import type { HttpTransport } from "../src/transport";
 import type {
-  EarningsEntry,
-  MarketplaceTool,
-  MarketplaceSubscription,
-  AuthorConfig,
+  MarketplaceToolSummary,
+  MarketplaceSubscriptionResponse,
+  MarketplaceAuthorConfigResponse,
+  MarketplaceEarningEntry,
+  MarketplaceSubscriptionItem,
+  UnsubscribeResponse,
 } from "../src/types";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -24,17 +26,26 @@ function makeMockHttp() {
   } as unknown as HttpTransport;
 }
 
-const SAMPLE_TOOL: MarketplaceTool = {
+const SAMPLE_TOOL: MarketplaceToolSummary = {
   name: "acme/web_search",
+  qualified_name: "acme/web_search",
+  tool_name: "web_search",
+  display_name: "Web Search",
   author: "Acme Corp",
   author_slug: "acme",
   description: "Search the web.",
+  short_description: "Search.",
   input_schema: {},
-  cost_usdc: 0.001,
+  cost_usdc: 100,
   tool_type: "webhook",
+  category: "search",
+  total_calls: 10,
+  reputation_score: 4.8,
+  health_status: "healthy",
+  is_healthy: true,
 };
 
-const SAMPLE_SUB: MarketplaceSubscription = {
+const SAMPLE_SUB: MarketplaceSubscriptionResponse = {
   id: "sub-uuid-1",
   org_id: "org-uuid-1",
   qualified_tool_name: "acme/web_search",
@@ -42,20 +53,26 @@ const SAMPLE_SUB: MarketplaceSubscription = {
   subscribed_at: "2025-01-01T00:00:00Z",
 };
 
-const SAMPLE_AUTHOR_CONFIG: AuthorConfig = {
+const SAMPLE_SUB_ITEM: MarketplaceSubscriptionItem = {
+  id: "sub-uuid-1",
+  qualified_tool_name: "acme/web_search",
+  subscribed_at: "2025-01-01T00:00:00Z",
+};
+
+const SAMPLE_AUTHOR_CONFIG: MarketplaceAuthorConfigResponse = {
   org_id: "org-uuid-1",
   settlement_wallet: "0xABCDEF1234567890ABCDEF1234567890ABCDEF12",
   created_at: "2025-01-01T00:00:00Z",
   updated_at: "2025-01-01T00:00:00Z",
 };
 
-const SAMPLE_EARNINGS: EarningsEntry = {
+const SAMPLE_EARNINGS: MarketplaceEarningEntry = {
   id: "earn-1",
   tool_name: "web_search",
-  total_cost_usdc: 0.001,
+  total_cost_usdc: 100,
   caller_org_id: "org-uuid-2",
-  author_share_usdc: 0.0009,
-  platform_share_usdc: 0.0001,
+  author_share_usdc: 90,
+  platform_share_usdc: 10,
   status: "settled",
   created_at: "2025-01-01T00:00:00Z",
 };
@@ -133,7 +150,7 @@ describe("MarketplaceModule.catalog", () => {
     const result = await mp.catalog();
     expect(result.tools[0].author).toBe("Acme Corp");
     expect(result.tools[0].author_slug).toBe("acme");
-    expect(result.tools[0].cost_usdc).toBe(0.001);
+    expect(result.tools[0].cost_usdc).toBe(100);
   });
 
   it("round-trips tool_type from the wire payload", async () => {
@@ -200,7 +217,7 @@ describe("MarketplaceModule.subscriptions", () => {
 
   it("calls GET /marketplace/subscriptions", async () => {
     vi.mocked(http.request).mockResolvedValue({
-      subscriptions: [SAMPLE_SUB],
+      subscriptions: [SAMPLE_SUB_ITEM],
     });
     await mp.subscriptions();
     expect(http.request).toHaveBeenCalledWith(
@@ -209,13 +226,13 @@ describe("MarketplaceModule.subscriptions", () => {
     );
   });
 
-  it("returns an array of MarketplaceSubscription", async () => {
+  it("returns subscription list envelope from GET /marketplace/subscriptions", async () => {
     vi.mocked(http.request).mockResolvedValue({
-      subscriptions: [SAMPLE_SUB],
+      subscriptions: [SAMPLE_SUB_ITEM],
     });
-    const subs = await mp.subscriptions();
-    expect(Array.isArray(subs)).toBe(true);
-    expect(subs[0].id).toBe("sub-uuid-1");
+    const result = await mp.subscriptions();
+    expect(result.subscriptions).toHaveLength(1);
+    expect(result.subscriptions[0].id).toBe("sub-uuid-1");
   });
 });
 
@@ -231,7 +248,10 @@ describe("MarketplaceModule.unsubscribe", () => {
   });
 
   it("calls DELETE /marketplace/subscriptions/{id}", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
+    vi.mocked(http.request).mockResolvedValue({
+      status: "unsubscribed",
+      subscription_id: "sub-uuid-1",
+    });
     await mp.unsubscribe("sub-uuid-1");
     expect(http.request).toHaveBeenCalledWith(
       "DELETE",
@@ -240,15 +260,22 @@ describe("MarketplaceModule.unsubscribe", () => {
   });
 
   it("URL-encodes a subscription ID that contains slashes", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
+    vi.mocked(http.request).mockResolvedValue({
+      status: "unsubscribed",
+      subscription_id: "a/b/c",
+    });
     await mp.unsubscribe("a/b/c");
     const [, path] = vi.mocked(http.request).mock.calls[0];
     expect(path).toBe("/marketplace/subscriptions/a%2Fb%2Fc");
   });
 
-  it("resolves void on success", async () => {
-    vi.mocked(http.request).mockResolvedValue(undefined);
-    await expect(mp.unsubscribe("sub-uuid-1")).resolves.toBeUndefined();
+  it("returns unsubscribe response on success", async () => {
+    const mockRep: UnsubscribeResponse = {
+      status: "unsubscribed",
+      subscription_id: "sub-uuid-1",
+    };
+    vi.mocked(http.request).mockResolvedValue(mockRep);
+    await expect(mp.unsubscribe("sub-uuid-1")).resolves.toEqual(mockRep);
   });
 });
 
@@ -380,7 +407,7 @@ describe("MarketplaceModule.earnings", () => {
       next_cursor: null,
     });
     const result = await mp.earnings();
-    expect(result.earnings[0].total_cost_usdc).toBe(0.001);
+    expect(result.earnings[0].total_cost_usdc).toBe(100);
   });
 
   it("forwards tool_name and cursor as query params", async () => {
@@ -497,14 +524,14 @@ describe("Marketplace subscription lifecycle workflow", () => {
 
     vi.mocked(http.request)
       .mockResolvedValueOnce(SAMPLE_SUB)        // subscribe
-      .mockResolvedValueOnce({ subscriptions: [SAMPLE_SUB] })  // subscriptions
-      .mockResolvedValueOnce(undefined);        // unsubscribe
+      .mockResolvedValueOnce({ subscriptions: [SAMPLE_SUB_ITEM] })  // subscriptions
+      .mockResolvedValueOnce({ status: "unsubscribed", subscription_id: "sub-uuid-1" });        // unsubscribe
 
     const sub = await mp.subscribe("acme/web_search");
     expect(sub.id).toBe("sub-uuid-1");
 
-    const subs = await mp.subscriptions();
-    expect(subs).toHaveLength(1);
+    const result = await mp.subscriptions();
+    expect(result.subscriptions).toHaveLength(1);
 
     await mp.unsubscribe(sub.id);
     expect(http.request).toHaveBeenCalledTimes(3);

@@ -2,13 +2,14 @@ import type { HttpTransport } from "./transport";
 import { ValidationError } from "./errors";
 import type {
   CreateEventTriggerRequest,
-  EventDispatchAccepted,
-  EventTrigger,
-  EventTriggerWithSecret,
-  Page,
+  EventDispatchResponse,
+  EventTriggerItem,
+  EventTriggerCreatedResponse,
   RotateEventTriggerSecretResponse,
-  ScheduledRunResult,
+  ScheduledRunResultsResponse,
+  ScheduledRunResultItem,
   UpdateEventTriggerRequest,
+  ScheduleDeletedResponse,
 } from "./types";
 import { parseListResponse } from "./utils/parseListResponse";
 
@@ -21,22 +22,22 @@ const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
 export class EventTriggersModule {
   constructor(private readonly http: HttpTransport) {}
 
-  async create(data: CreateEventTriggerRequest): Promise<EventTriggerWithSecret> {
+  async create(data: CreateEventTriggerRequest): Promise<EventTriggerCreatedResponse> {
     this.validateCreateInput(data);
-    return this.http.request<EventTriggerWithSecret>(
+    return this.http.request<EventTriggerCreatedResponse>(
       "POST",
       "/agent/event-triggers",
       { body: data },
     );
   }
 
-  async list(): Promise<EventTrigger[]> {
+  async list(): Promise<EventTriggerItem[]> {
     const data = await this.http.request<unknown>("GET", "/agent/event-triggers");
-    return parseListResponse<EventTrigger>(data).items;
+    return parseListResponse<EventTriggerItem>(data).items;
   }
 
-  async get(id: string): Promise<EventTrigger> {
-    return this.http.request<EventTrigger>(
+  async get(id: string): Promise<EventTriggerItem> {
+    return this.http.request<EventTriggerItem>(
       "GET",
       `/agent/event-triggers/${encodeURIComponent(id)}`,
     );
@@ -45,17 +46,17 @@ export class EventTriggersModule {
   async update(
     id: string,
     data: UpdateEventTriggerRequest,
-  ): Promise<EventTrigger> {
+  ): Promise<EventTriggerItem> {
     this.validateUpdateInput(data);
-    return this.http.request<EventTrigger>(
+    return this.http.request<EventTriggerItem>(
       "PATCH",
       `/agent/event-triggers/${encodeURIComponent(id)}`,
       { body: data },
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.http.request<void>(
+  async delete(id: string): Promise<ScheduleDeletedResponse> {
+    return this.http.request<ScheduleDeletedResponse>(
       "DELETE",
       `/agent/event-triggers/${encodeURIComponent(id)}`,
     );
@@ -71,7 +72,7 @@ export class EventTriggersModule {
   async runs(
     id: string,
     params?: { limit?: number; cursor?: string },
-  ): Promise<Page<ScheduledRunResult>> {
+  ): Promise<ScheduledRunResultsResponse> {
     const data = await this.http.request<unknown>(
       "GET",
       `/agent/event-triggers/${encodeURIComponent(id)}/runs`,
@@ -82,7 +83,7 @@ export class EventTriggersModule {
         },
       },
     );
-    const parsed = parseListResponse<ScheduledRunResult>(data, {
+    const parsed = parseListResponse<ScheduledRunResultItem>(data, {
       container: "items",
     });
     return { items: parsed.items, next_cursor: parsed.nextCursor };
@@ -92,7 +93,7 @@ export class EventTriggersModule {
     triggerToken: string,
     payload: Record<string, unknown> | unknown[],
     opts: { secret: string; idempotencyKey?: string },
-  ): Promise<EventDispatchAccepted> {
+  ): Promise<EventDispatchResponse> {
     this.validateFireInput(payload, opts);
 
     const headers: Record<string, string> = {
@@ -102,7 +103,7 @@ export class EventTriggersModule {
       headers["X-Idempotency-Key"] = opts.idempotencyKey;
     }
 
-    return this.http.request<EventDispatchAccepted>(
+    return this.http.request<EventDispatchResponse>(
       "POST",
       `/agent/events/${encodeURIComponent(triggerToken)}`,
       {
