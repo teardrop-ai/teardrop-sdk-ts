@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  expectAbsent,
   makeAuthedClient,
   randomSuffix,
   testUrl,
@@ -22,11 +21,16 @@ describe.skipIf(!testUrl)("Integration — MemoryModule", () => {
     } finally {
       if (createdId) {
         await client.memory.delete(createdId);
-        await expectAbsent(
-          async () => (await client.memory.list({ limit: 100 })).items,
-          (entry) => entry.id === createdId,
-        );
+        let cursor: string | undefined;
+        let found = false;
+        for (let page = 0; page < 10; page += 1) {
+          const listed = await client.memory.list({ limit: 100, cursor });
+          found = listed.items.some((entry) => entry.id === createdId);
+          if (found || !listed.next_cursor) break;
+          cursor = listed.next_cursor;
+        }
+        expect(found).toBe(false);
       }
     }
-  });
+  }, 30_000);
 });

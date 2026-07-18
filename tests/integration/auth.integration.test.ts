@@ -7,11 +7,27 @@
  *   TEARDROP_TEST_SECRET=secret \
  *   npx vitest run tests/integration
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { AuthenticationError } from "../../src/errors";
+import type { TokenResponse } from "../../src/types";
 import { makeClient, testEmail, testSecret, testUrl } from "./helpers";
 
 describe.skipIf(!testUrl)("Integration — AuthModule", () => {
+  let loginTokens: TokenResponse;
+  let refreshedTokens: TokenResponse;
+
+  beforeAll(async () => {
+    const client = makeClient();
+    loginTokens = await client.auth.login({
+      email: testEmail,
+      secret: testSecret,
+    });
+    if (!loginTokens.refresh_token) {
+      throw new Error("email login did not return a refresh token");
+    }
+    refreshedTokens = await client.auth.refresh(loginTokens.refresh_token);
+  });
+
   it("siweNonce() returns a non-empty nonce without authentication", async () => {
     const client = makeClient();
     const result = await client.auth.siweNonce();
@@ -20,16 +36,14 @@ describe.skipIf(!testUrl)("Integration — AuthModule", () => {
   });
 
   it("login() with email + secret stores a valid access token", async () => {
-    const client = makeClient();
-    const result = await client.auth.login({ email: testEmail, secret: testSecret });
-    expect(typeof result.access_token).toBe("string");
-    expect(result.token_type).toBe("bearer");
-    expect(result.expires_in).toBeGreaterThan(0);
+    expect(typeof loginTokens.access_token).toBe("string");
+    expect(loginTokens.token_type).toBe("bearer");
+    expect(loginTokens.expires_in).toBeGreaterThan(0);
   });
 
   it("me() returns org_name and email after login", async () => {
     const client = makeClient();
-    await client.auth.login({ email: testEmail, secret: testSecret });
+    client.setToken(loginTokens.access_token);
     const me = await client.auth.me();
     expect(typeof me.org_name).toBe("string");
     expect(me.email).toBe(testEmail);
@@ -48,18 +62,16 @@ describe.skipIf(!testUrl)("Integration — AuthModule", () => {
   });
 
   it("refresh() with a valid refresh token produces a new access_token", async () => {
-    const client = makeClient();
-    const first = await client.auth.login({ email: testEmail, secret: testSecret });
-    expect(first.refresh_token).toBeDefined();
-    const second = await client.auth.refresh(first.refresh_token!);
-    expect(typeof second.access_token).toBe("string");
-    expect(second.access_token).not.toBe(first.access_token);
+    expect(typeof refreshedTokens.access_token).toBe("string");
+    expect(refreshedTokens.access_token).not.toBe(loginTokens.access_token);
   });
 
   it("logout() with a refresh token succeeds without error", async () => {
     const client = makeClient();
-    const tokens = await client.auth.login({ email: testEmail, secret: testSecret });
-    expect(tokens.refresh_token).toBeDefined();
-    await expect(client.auth.logout(tokens.refresh_token!)).resolves.toBeUndefined();
+    client.setToken(refreshedTokens.access_token);
+    expect(refreshedTokens.refresh_token).toBeDefined();
+    await expect(
+      client.auth.logout(refreshedTokens.refresh_token!),
+    ).resolves.toBeUndefined();
   });
 });

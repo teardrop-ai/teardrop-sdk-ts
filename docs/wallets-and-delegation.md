@@ -34,6 +34,12 @@ const info = await client.agentWallets.get({ includeBalance: true });
 await client.agentWallets.deactivate();
 ```
 
+Agent-wallet provisioning is available only when the server has agent wallets
+enabled and valid CDP credentials. The supported chain IDs are `84532` (Base
+Sepolia) and `8453` (Base). A disabled feature or unavailable CDP setup is an
+environment prerequisite, while an unsupported chain configuration is a real
+API configuration error.
+
 ## A2A Delegation
 
 Allow other organisations' agents to call your agent on behalf of their users.
@@ -43,7 +49,8 @@ Allow other organisations' agents to call your agent on behalf of their users.
 const agent = await client.a2a.addAgent({
   agent_url: "https://partner-agent.example.com",
   label: "Partner Agent",
-  permissions: ["run"],
+  require_x402: false,
+  jwt_forward: false,
 });
 
 const agents = await client.a2a.listAgents();
@@ -53,6 +60,11 @@ await client.a2a.removeAgent(agent.id);
 // View delegation event history
 const delegations = await client.a2a.delegations({ limit: 20 });
 ```
+
+Trusted-agent mutations require an org-admin JWT with both `role=admin` and an
+`org_id` claim. Platform administrators should use
+`client.admin.addA2AAgent({ org_id, agent_url, ... })` instead of the
+organization-scoped `client.a2a.addAgent()` method.
 
 ---
 

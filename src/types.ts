@@ -659,10 +659,22 @@ export interface ToolPricing {
   description: string;
 }
 
+export interface PricingRuleWithOverrides {
+  id: string;
+  name: string;
+  run_price_usdc: number;
+  created_at?: string;
+  effective_from?: string;
+  tokens_in_cost_per_1k?: number;
+  tokens_out_cost_per_1k?: number;
+  tool_call_cost?: number;
+  tool_overrides?: Record<string, number>;
+}
+
 export interface BillingPricingResponse {
-  tools: ToolPricing[];
-  base_cost_usdc: number;
-  updated_at: string;
+  billing_enabled: boolean;
+  network?: string | null;
+  pricing?: PricingRuleWithOverrides | null;
 }
 
 export interface BillingBalanceResponse {

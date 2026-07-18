@@ -91,6 +91,7 @@ export type {
   Wallet,
   LinkWalletRequest,
   ToolPricing,
+  PricingRuleWithOverrides,
   BillingPricingResponse,
   CreditBalance,
   BillingHistoryEntry,

@@ -5,8 +5,17 @@ describe.skipIf(!testUrl)("Integration — Billing and Usage modules", () => {
   it("returns public billing pricing without authentication", async () => {
     const client = makeClient();
     const pricing = await client.billing.pricing();
-    expect(Array.isArray(pricing.tools)).toBe(true);
-    expect(typeof pricing.base_cost_usdc).toBe("number");
+    expect(typeof pricing.billing_enabled).toBe("boolean");
+    expect(
+      pricing.network === undefined ||
+        pricing.network === null ||
+        typeof pricing.network === "string",
+    ).toBe(true);
+    expect(
+      pricing.pricing === undefined ||
+        pricing.pricing === null ||
+        typeof pricing.pricing.run_price_usdc === "number",
+    ).toBe(true);
   });
 
   it("reads authenticated balances, history, invoices, and usage", async () => {

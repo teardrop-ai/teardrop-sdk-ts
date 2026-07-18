@@ -7,7 +7,8 @@ import {
 } from "./helpers";
 
 const allowCredentialRotation =
-  process.env.TEARDROP_TEST_ALLOW_CREDENTIAL_ROTATION === "1";
+  process.env.TEARDROP_TEST_ALLOW_CREDENTIAL_ROTATION === "1" &&
+  process.env.TEARDROP_TEST_CREDENTIAL_ROTATION_DISPOSABLE_ORG === "1";
 
 describe.skipIf(!testUrl)("Integration — CredentialsModule", () => {
   it("lists organization credentials without exposing secrets", async () => {

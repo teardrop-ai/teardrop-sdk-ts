@@ -45,6 +45,12 @@ await client.tools.delete(tool.id);
 Register external MCP servers. The agent auto-discovers their tools at run
 time and namespaces them as `{server_name}__{tool_name}`.
 
+Use a real, server-reachable Streamable HTTP MCP endpoint for discovery. A
+normal webpage, placeholder URL, or local/private address is not a valid
+fixture. An unavailable optional fixture may surface as `502`; unexpected
+`500` responses, malformed discovery payloads, protocol errors, and `400`
+responses should remain visible failures.
+
 ```typescript
 import { parseMcpToolName } from "teardrop-sdk";
 

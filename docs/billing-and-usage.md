@@ -24,10 +24,12 @@ parseUsdc("1.50");      // → 1500000
 
 ```typescript
 const pricing = await client.billing.pricing();  // no auth required
-for (const tool of pricing.tools) {
-  console.log(tool.tool_name, tool.price_usdc);
-}
+console.log(pricing.billing_enabled, pricing.network);
+console.log(pricing.pricing?.name, pricing.pricing?.run_price_usdc);
 ```
+
+When billing is disabled or no pricing rule is configured, `pricing.pricing` is
+`null` or omitted.
 
 ## Billing History & Invoices
 

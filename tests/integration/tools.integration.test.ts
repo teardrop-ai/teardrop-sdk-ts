@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  expectDeleted,
+  expectAbsent,
   makeAuthedClient,
   randomSuffix,
   testUrl,
@@ -12,7 +12,7 @@ const toolWebhookUrl = testWebhookUrl ?? "https://example.com";
 describe.skipIf(!testUrl)("Integration — ToolsModule", () => {
   it("supports create/list/get/update/delete lifecycle", async () => {
     const client = await makeAuthedClient();
-    const id = `sdk-int-tool-${randomSuffix()}`;
+    const id = `sdk_int_tool_${randomSuffix().replace(/-/g, "_")}`;
     let createdId: string | null = null;
 
     try {
@@ -36,14 +36,18 @@ describe.skipIf(!testUrl)("Integration — ToolsModule", () => {
 
       const updated = await client.tools.update(created.id, {
         description: "Updated integration test webhook tool",
-        is_active: false,
+        is_active: true,
       });
       expect(updated.description).toBe("Updated integration test webhook tool");
-      expect(updated.is_active).toBe(false);
+      expect(updated.is_active).toBe(true);
     } finally {
       if (createdId) {
-        await client.tools.delete(createdId);
-        await expectDeleted(() => client.tools.get(createdId!));
+        const deleted = await client.tools.delete(createdId);
+        expect(deleted.status).toBe("deleted");
+        await expectAbsent(
+          () => client.tools.list({ active_only: true }),
+          (tool) => tool.id === createdId,
+        );
       }
     }
   });

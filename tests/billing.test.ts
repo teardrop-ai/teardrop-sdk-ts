@@ -42,6 +42,32 @@ describe("BillingModule.history", () => {
   });
 });
 
+describe("BillingModule.pricing", () => {
+  it("returns the billing-enabled pricing rule without authentication", async () => {
+    const http = makeMockHttp();
+    const billing = new BillingModule(http);
+    vi.mocked(http.request).mockResolvedValue({
+      billing_enabled: true,
+      network: "base",
+      pricing: {
+        id: "pricing-1",
+        name: "default",
+        run_price_usdc: 50_000,
+      },
+    });
+
+    const result = await billing.pricing();
+
+    expect(result.billing_enabled).toBe(true);
+    expect(result.pricing?.run_price_usdc).toBe(50_000);
+    expect(vi.mocked(http.request)).toHaveBeenCalledWith(
+      "GET",
+      "/billing/pricing",
+      { auth: false },
+    );
+  });
+});
+
 describe("BillingModule.invoices", () => {
   let http: ReturnType<typeof makeMockHttp>;
   let billing: BillingModule;

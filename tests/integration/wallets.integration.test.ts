@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TeardropApiError } from "../../src/errors";
 import {
   expectAbsent,
   makeAuthedClient,
@@ -9,6 +10,11 @@ const siweMessage = process.env.TEARDROP_TEST_SIWE_MESSAGE;
 const siweSignature = process.env.TEARDROP_TEST_SIWE_SIGNATURE;
 const allowAgentWalletMutation =
   process.env.TEARDROP_TEST_ALLOW_AGENT_WALLET_MUTATION === "1";
+const agentWalletChainId = Number.parseInt(
+  process.env.TEARDROP_TEST_AGENT_WALLET_CHAIN_ID ?? "",
+  10,
+);
+const supportedAgentWalletChain = agentWalletChainId === 84532 || agentWalletChainId === 8453;
 
 describe.skipIf(!testUrl)("Integration — Wallet modules", () => {
   it("lists linked wallets", async () => {
@@ -41,10 +47,31 @@ describe.skipIf(!testUrl)("Integration — Wallet modules", () => {
 
   it.skipIf(!allowAgentWalletMutation)(
     "provisions, reads, and deactivates an agent wallet",
-    async () => {
+    async ({ skip }) => {
+      if (!supportedAgentWalletChain) {
+        skip("Set TEARDROP_TEST_AGENT_WALLET_CHAIN_ID to 84532 or 8453");
+        return;
+      }
+
       const client = await makeAuthedClient();
-      const provisioned = await client.agentWallets.provision();
+      let provisioned;
+      try {
+        provisioned = await client.agentWallets.provision();
+      } catch (error) {
+        if (error instanceof TeardropApiError && (error.status === 501 || error.status === 503)) {
+          skip(`Agent wallet fixture unavailable (${error.status})`);
+          return;
+        }
+        if (error instanceof TeardropApiError) {
+          throw new Error(
+            `Agent wallet provisioning failed (${error.status}): ${JSON.stringify(error.body)}`,
+            { cause: error },
+          );
+        }
+        throw error;
+      }
       expect(typeof provisioned.id).toBe("string");
+      expect(provisioned.chain_id).toBe(agentWalletChainId);
 
       try {
         const fetched = await client.agentWallets.get({ includeBalance: true });

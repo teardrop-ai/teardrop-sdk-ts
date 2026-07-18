@@ -21,6 +21,9 @@ import {
   testUrl,
 } from "./helpers";
 
+const allowBillableRuns =
+  process.env.TEARDROP_TEST_ALLOW_BILLABLE_RUNS === "1";
+
 async function collectAll(
   gen: AsyncIterableIterator<SseEvent>,
 ): Promise<SseEvent[]> {
@@ -29,7 +32,7 @@ async function collectAll(
   return events;
 }
 
-describe.skipIf(!testUrl)("Integration — AgentModule", () => {
+describe.skipIf(!testUrl || !allowBillableRuns)("Integration — AgentModule", () => {
   const runIds = new Set<string>();
   let cleanupClient: Awaited<ReturnType<typeof createAuthedClient>> | undefined;
 

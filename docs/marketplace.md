@@ -53,11 +53,16 @@ const sub = await client.marketplace.subscribe("acme/web_search");
 
 // List subscriptions
 const subs = await client.marketplace.subscriptions();
-// → MarketplaceSubscription[]
+// → { subscriptions: MarketplaceSubscriptionItem[] }
 
 // Unsubscribe
 await client.marketplace.unsubscribe(sub.id);
 ```
+
+Only healthy community tools from another organization are subscribable.
+`platform/<tool>` entries are built-in tools and are not subscription targets;
+attempting to subscribe to a platform tool or your own published tool returns
+`400`. A missing or inactive community fixture normally returns `422`.
 
 **Integration in Agent Runs:** After subscribing to a marketplace tool, the
 agent automatically discovers and can call it during `client.agent.run()`
@@ -81,7 +86,7 @@ const current = await client.marketplace.getAuthorConfig();
 ```typescript
 // Check total balance
 const balance = await client.marketplace.balance();
-// → { balance_usdc, pending_usdc }
+// → { org_id, balance_usdc }
 
 // Fetch earnings history (paginated)
 const { earnings, next_cursor } = await client.marketplace.earnings({ limit: 50 });

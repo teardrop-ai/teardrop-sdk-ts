@@ -8,23 +8,16 @@
  *   npx vitest run tests/integration
  */
 import { describe, expect, it } from "vitest";
-import { TeardropClient } from "../../src/client";
+import { makeAuthedClient, makeClient, testUrl } from "./helpers";
 
-const testUrl = process.env.TEARDROP_TEST_URL;
-const testEmail = process.env.TEARDROP_TEST_EMAIL ?? "test@example.com";
-const testSecret = process.env.TEARDROP_TEST_SECRET ?? "changeme";
+const testCommunityTool =
+  process.env.TEARDROP_TEST_MARKETPLACE_COMMUNITY_TOOL;
+const testOwnAuthorSlug =
+  process.env.TEARDROP_TEST_MARKETPLACE_OWN_AUTHOR_SLUG;
+const testCommunityAuthorSlug =
+  process.env.TEARDROP_TEST_MARKETPLACE_AUTHOR_SLUG;
 
 describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
-  function makeClient() {
-    return new TeardropClient({ baseUrl: testUrl! });
-  }
-
-  async function makeAuthedClient() {
-    const client = makeClient();
-    await client.auth.login({ email: testEmail, secret: testSecret });
-    return client;
-  }
-
   it("catalog() returns tools and next_cursor without authentication", async () => {
     const client = makeClient();
     const result = await client.marketplace.catalog();
@@ -60,14 +53,13 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
   it("subscriptions() returns an array after authentication", async () => {
     const client = await makeAuthedClient();
     const subs = await client.marketplace.subscriptions();
-    expect(Array.isArray(subs)).toBe(true);
+    expect(Array.isArray(subs.subscriptions)).toBe(true);
   });
 
-  it("balance() returns balance_usdc and pending_usdc numbers", async () => {
+  it("balance() returns an author balance number", async () => {
     const client = await makeAuthedClient();
     const bal = await client.marketplace.balance();
     expect(typeof bal.balance_usdc).toBe("number");
-    expect(typeof bal.pending_usdc).toBe("number");
   });
 
   it("earnings() returns earnings array and next_cursor", async () => {
@@ -78,4 +70,45 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
       result.next_cursor === null || typeof result.next_cursor === "string",
     ).toBe(true);
   });
+
+  it.skipIf(!testCommunityTool || !testOwnAuthorSlug)(
+    "subscribes to and unsubscribes from an external healthy community tool",
+    async () => {
+      const client = await makeAuthedClient();
+      const catalog = await client.marketplace.catalog({ limit: 100 });
+      const tool = catalog.tools.find(
+        (entry) => entry.qualified_name === testCommunityTool,
+      );
+
+      expect(tool).toBeDefined();
+      expect(tool!.tool_type).toBe("community");
+      expect(tool!.author_slug).not.toBe("platform");
+      expect(tool!.author_slug).not.toBe(testOwnAuthorSlug);
+      expect(tool!.is_healthy).toBe(true);
+      if (testCommunityAuthorSlug) {
+        expect(tool!.author_slug).toBe(testCommunityAuthorSlug);
+      }
+
+      let subscriptionId: string | undefined;
+      try {
+        const subscription = await client.marketplace.subscribe(
+          tool!.qualified_name,
+        );
+        subscriptionId = subscription.id;
+        expect(subscription.qualified_tool_name).toBe(tool!.qualified_name);
+
+        const subscriptions = await client.marketplace.subscriptions();
+        expect(
+          subscriptions.subscriptions.some(
+            (entry) => entry.id === subscription.id,
+          ),
+        ).toBe(true);
+      } finally {
+        if (subscriptionId) {
+          const unsubscribed = await client.marketplace.unsubscribe(subscriptionId);
+          expect(unsubscribed.subscription_id).toBe(subscriptionId);
+        }
+      }
+    },
+  );
 });

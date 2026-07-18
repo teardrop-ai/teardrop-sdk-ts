@@ -89,6 +89,10 @@ const newCreds = await client.credentials.regenerate();
 // Store client_secret securely — it is not stored server-side
 ```
 
+Rotation invalidates all previous organization credentials and cannot be
+restored through the SDK. Run rotation integration tests only against a
+disposable organization.
+
 ---
 
 **See also:** [Error Handling](error-handling.md) for `AuthenticationError` (401) and

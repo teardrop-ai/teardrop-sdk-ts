@@ -88,6 +88,10 @@ const text = await collectText(client.agent.run({ message: "Say hi" }));
 // → "Hi there!"
 ```
 
+The SDK has no run-delete or purge operation. Integration tests can record an
+outcome for runs they create, but deleting or excluding those runs requires a
+backend fixture or administrative API outside this SDK.
+
 ## Agent Card
 
 Fetch the A2A agent card from `/.well-known/agent-card.json`. Result is cached
