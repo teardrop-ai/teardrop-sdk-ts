@@ -8,22 +8,17 @@
  *   npx vitest run tests/integration
  */
 import { describe, expect, it } from "vitest";
-import { TeardropClient } from "../../src/client";
 import { TeardropApiError } from "../../src/errors";
-
-const testUrl = process.env.TEARDROP_TEST_URL;
-const testEmail = process.env.TEARDROP_TEST_EMAIL ?? "test@example.com";
-const testSecret = process.env.TEARDROP_TEST_SECRET ?? "changeme";
-
-function randomSuffix(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+import {
+  expectDeleted,
+  makeAuthedClient as createAuthedClient,
+  randomSuffix,
+  testUrl,
+} from "./helpers";
 
 describe.skipIf(!testUrl)("Integration — SchedulesModule", () => {
   async function makeAuthedClient() {
-    const client = new TeardropClient({ baseUrl: testUrl! });
-    await client.auth.login({ email: testEmail, secret: testSecret });
-    return client;
+    return createAuthedClient();
   }
 
   it("supports create/list/get/update/runs/delete lifecycle", async () => {
@@ -69,9 +64,12 @@ describe.skipIf(!testUrl)("Integration — SchedulesModule", () => {
       if (createdId) {
         try {
           await client.schedules.delete(createdId);
-        } catch {
-          // Best effort cleanup.
+        } catch (err) {
+          if (!(err instanceof TeardropApiError && err.status === 404)) {
+            throw err;
+          }
         }
+        await expectDeleted(() => client.schedules.get(createdId!));
       }
     }
   });

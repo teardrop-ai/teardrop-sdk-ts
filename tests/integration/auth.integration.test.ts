@@ -8,18 +8,10 @@
  *   npx vitest run tests/integration
  */
 import { describe, expect, it } from "vitest";
-import { TeardropClient } from "../../src/client";
 import { AuthenticationError } from "../../src/errors";
-
-const testUrl = process.env.TEARDROP_TEST_URL;
-const testEmail = process.env.TEARDROP_TEST_EMAIL ?? "test@example.com";
-const testSecret = process.env.TEARDROP_TEST_SECRET ?? "changeme";
+import { makeClient, testEmail, testSecret, testUrl } from "./helpers";
 
 describe.skipIf(!testUrl)("Integration — AuthModule", () => {
-  function makeClient() {
-    return new TeardropClient({ baseUrl: testUrl! });
-  }
-
   it("siweNonce() returns a non-empty nonce without authentication", async () => {
     const client = makeClient();
     const result = await client.auth.siweNonce();
@@ -58,11 +50,8 @@ describe.skipIf(!testUrl)("Integration — AuthModule", () => {
   it("refresh() with a valid refresh token produces a new access_token", async () => {
     const client = makeClient();
     const first = await client.auth.login({ email: testEmail, secret: testSecret });
-    if (!first.refresh_token) {
-      // M2M tokens don't issue refresh tokens — skip gracefully
-      return;
-    }
-    const second = await client.auth.refresh(first.refresh_token);
+    expect(first.refresh_token).toBeDefined();
+    const second = await client.auth.refresh(first.refresh_token!);
     expect(typeof second.access_token).toBe("string");
     expect(second.access_token).not.toBe(first.access_token);
   });
@@ -70,7 +59,7 @@ describe.skipIf(!testUrl)("Integration — AuthModule", () => {
   it("logout() with a refresh token succeeds without error", async () => {
     const client = makeClient();
     const tokens = await client.auth.login({ email: testEmail, secret: testSecret });
-    if (!tokens.refresh_token) return;
-    await expect(client.auth.logout(tokens.refresh_token)).resolves.toBeUndefined();
+    expect(tokens.refresh_token).toBeDefined();
+    await expect(client.auth.logout(tokens.refresh_token!)).resolves.toBeUndefined();
   });
 });

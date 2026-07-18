@@ -7,8 +7,7 @@
  *   TEARDROP_TEST_SECRET=secret \
  *   npx vitest run tests/integration
  */
-import { describe, expect, it } from "vitest";
-import { TeardropClient } from "../../src/client";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   EVENT_DONE,
   EVENT_RUN_STARTED,
@@ -17,10 +16,10 @@ import {
   type SseEvent,
 } from "../../src/types";
 import { collectText } from "../../src/utils/parseSseStream";
-
-const testUrl = process.env.TEARDROP_TEST_URL;
-const testEmail = process.env.TEARDROP_TEST_EMAIL ?? "test@example.com";
-const testSecret = process.env.TEARDROP_TEST_SECRET ?? "changeme";
+import {
+  makeAuthedClient as createAuthedClient,
+  testUrl,
+} from "./helpers";
 
 async function collectAll(
   gen: AsyncIterableIterator<SseEvent>,
@@ -31,15 +30,42 @@ async function collectAll(
 }
 
 describe.skipIf(!testUrl)("Integration — AgentModule", () => {
+  const runIds = new Set<string>();
+  let cleanupClient: Awaited<ReturnType<typeof createAuthedClient>> | undefined;
+
   async function makeAuthedClient() {
-    const client = new TeardropClient({ baseUrl: testUrl! });
-    await client.auth.login({ email: testEmail, secret: testSecret });
+    const client = await createAuthedClient();
+    cleanupClient = client;
     return client;
   }
 
+  function trackEvent(event: SseEvent): void {
+    if (event.event === EVENT_RUN_STARTED) runIds.add(event.data.run_id);
+  }
+
+  async function collectTracked(
+    gen: AsyncIterableIterator<SseEvent>,
+  ): Promise<SseEvent[]> {
+    const events = await collectAll(gen);
+    for (const event of events) trackEvent(event);
+    return events;
+  }
+
+  afterEach(async () => {
+    if (cleanupClient) {
+      for (const runId of runIds) {
+        try {
+          await cleanupClient.agent.setOutcome(runId, 0);
+        } catch { }
+      }
+    }
+    cleanupClient = undefined;
+    runIds.clear();
+  });
+
   it("run('Say OK') yields RUN_STARTED and at least one TEXT_MESSAGE_CONTENT event", async () => {
     const client = await makeAuthedClient();
-    const events = await collectAll(client.agent.run({ message: "Say OK" }));
+    const events = await collectTracked(client.agent.run({ message: "Say OK" }));
     const types = events.map((e) => e.event);
     expect(types).toContain(EVENT_RUN_STARTED);
     expect(types).toContain(EVENT_TEXT_MSG_CONTENT);
@@ -48,7 +74,7 @@ describe.skipIf(!testUrl)("Integration — AgentModule", () => {
 
   it("run() stream ends with DONE event", async () => {
     const client = await makeAuthedClient();
-    const events = await collectAll(client.agent.run({ message: "Say OK" }));
+    const events = await collectTracked(client.agent.run({ message: "Say OK" }));
     const last = events[events.length - 1];
     expect(last?.event).toBe(EVENT_DONE);
   });
@@ -61,8 +87,9 @@ describe.skipIf(!testUrl)("Integration — AgentModule", () => {
 
   it("USAGE_SUMMARY event contains tokens_in > 0 and cost_usdc >= 0", async () => {
     const client = await makeAuthedClient();
-    const events = await collectAll(client.agent.run({ message: "Say OK" }));
+    const events = await collectTracked(client.agent.run({ message: "Say OK" }));
     const usage = events.find((e) => e.event === EVENT_USAGE_SUMMARY);
+    expect(usage?.event).toBe(EVENT_USAGE_SUMMARY);
     if (usage?.event === EVENT_USAGE_SUMMARY) {
       expect(usage.data.tokens_in).toBeGreaterThan(0);
       expect(usage.data.cost_usdc).toBeGreaterThanOrEqual(0);
@@ -71,20 +98,25 @@ describe.skipIf(!testUrl)("Integration — AgentModule", () => {
 
   it("thread_id continuity — second run in same thread has thread_id in response", async () => {
     const client = await makeAuthedClient();
-    const firstEvents = await collectAll(
+    const firstEvents = await collectTracked(
       client.agent.run({ message: "My name is Alice." }),
     );
     const started = firstEvents.find((e) => e.event === EVENT_RUN_STARTED);
-    if (!started || started.event !== EVENT_RUN_STARTED) return;
+    expect(started?.event).toBe(EVENT_RUN_STARTED);
+    if (started?.event !== EVENT_RUN_STARTED) {
+      throw new Error("run did not emit RUN_STARTED");
+    }
     const thread_id = started.data.thread_id;
 
-    const secondEvents = await collectAll(
+    const secondEvents = await collectTracked(
       client.agent.run({ message: "What is my name?", thread_id }),
     );
     const started2 = secondEvents.find((e) => e.event === EVENT_RUN_STARTED);
-    if (started2?.event === EVENT_RUN_STARTED) {
-      expect(started2.data.thread_id).toBe(thread_id);
+    expect(started2?.event).toBe(EVENT_RUN_STARTED);
+    if (started2?.event !== EVENT_RUN_STARTED) {
+      throw new Error("second run did not emit RUN_STARTED");
     }
+    expect(started2.data.thread_id).toBe(thread_id);
   });
 
   it("AbortController can cancel a run without throwing uncaught errors", async () => {
@@ -97,10 +129,11 @@ describe.skipIf(!testUrl)("Integration — AgentModule", () => {
     // Consume first event then abort
     const firstResult = await gen.next();
     expect(firstResult.done).toBe(false);
+    if (!firstResult.done) trackEvent(firstResult.value);
     ctrl.abort();
     // Drain remaining events — may throw AbortError which is acceptable
     try {
-      for await (const _ of gen) { /* intentionally empty */ }
+      for await (const event of gen) trackEvent(event);
     } catch (err) {
       const name = (err as Error).name;
       expect(name === "AbortError" || name === "Error").toBe(true);
