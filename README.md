@@ -102,11 +102,8 @@ export TEARDROP_TEST_SECRET="your-password"
 # Agent-wallet mutation requires a supported configured chain.
 # export TEARDROP_TEST_ALLOW_AGENT_WALLET_MUTATION="1"
 # export TEARDROP_TEST_AGENT_WALLET_CHAIN_ID="84532"
-# Marketplace subscription tests require an external healthy community tool.
-# export TEARDROP_TEST_MARKETPLACE_COMMUNITY_TOOL="author/tool_name"
-# export TEARDROP_TEST_MARKETPLACE_OWN_AUTHOR_SLUG="your-org"
-# Optional: assert the expected external author slug.
-# export TEARDROP_TEST_MARKETPLACE_AUTHOR_SLUG="other-org"
+# Marketplace subscription tests automatically select the first healthy
+# community tool from the catalog; no tool-specific fixture is required.
 # MCP tests require a real reachable Streamable HTTP endpoint.
 # export TEARDROP_TEST_MCP_URL="https://mcp.example.com/mcp"
 # export TEARDROP_TEST_MCP_TOOL="tool_name"

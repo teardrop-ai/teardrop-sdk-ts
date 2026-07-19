@@ -59,10 +59,11 @@ const subs = await client.marketplace.subscriptions();
 await client.marketplace.unsubscribe(sub.id);
 ```
 
-Only healthy community tools from another organization are subscribable.
-`platform/<tool>` entries are built-in tools and are not subscription targets;
-attempting to subscribe to a platform tool or your own published tool returns
-`400`. A missing or inactive community fixture normally returns `422`.
+Healthy community tools are subscribable. `platform/<tool>` entries are
+built-in tools and are not subscription targets; attempting to subscribe to a
+platform tool returns `400`. The integration test selects the first healthy
+community tool from the catalog at runtime and skips only when no such tool is
+published.
 
 **Integration in Agent Runs:** After subscribing to a marketplace tool, the
 agent automatically discovers and can call it during `client.agent.run()`

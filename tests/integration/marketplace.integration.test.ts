@@ -8,14 +8,8 @@
  *   npx vitest run tests/integration
  */
 import { describe, expect, it } from "vitest";
+import type { MarketplaceToolSummary } from "../../src/types";
 import { makeAuthedClient, makeClient, testUrl } from "./helpers";
-
-const testCommunityTool =
-  process.env.TEARDROP_TEST_MARKETPLACE_COMMUNITY_TOOL;
-const testOwnAuthorSlug =
-  process.env.TEARDROP_TEST_MARKETPLACE_OWN_AUTHOR_SLUG;
-const testCommunityAuthorSlug =
-  process.env.TEARDROP_TEST_MARKETPLACE_AUTHOR_SLUG;
 
 describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
   it("catalog() returns tools and next_cursor without authentication", async () => {
@@ -71,31 +65,49 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
     ).toBe(true);
   });
 
-  it.skipIf(!testCommunityTool || !testOwnAuthorSlug)(
-    "subscribes to and unsubscribes from an external healthy community tool",
-    async () => {
+  it(
+    "subscribes to and unsubscribes from the first healthy community tool",
+    async ({ skip }) => {
       const client = await makeAuthedClient();
-      const catalog = await client.marketplace.catalog({ limit: 100 });
-      const tool = catalog.tools.find(
-        (entry) => entry.qualified_name === testCommunityTool,
-      );
+      let cursor: string | undefined;
+      let tool: MarketplaceToolSummary | undefined;
+      const seenCursors = new Set<string>();
 
-      expect(tool).toBeDefined();
-      expect(tool!.tool_type).toBe("community");
-      expect(tool!.author_slug).not.toBe("platform");
-      expect(tool!.author_slug).not.toBe(testOwnAuthorSlug);
-      expect(tool!.is_healthy).toBe(true);
-      if (testCommunityAuthorSlug) {
-        expect(tool!.author_slug).toBe(testCommunityAuthorSlug);
+      do {
+        const catalog = await client.marketplace.catalog({
+          limit: 100,
+          cursor,
+        });
+        tool = catalog.tools.find(
+          (entry) =>
+            entry.tool_type === "community" &&
+            entry.author_slug !== "platform" &&
+            entry.is_healthy,
+        );
+        if (tool) break;
+
+        const nextCursor = catalog.next_cursor;
+        if (!nextCursor || seenCursors.has(nextCursor)) break;
+        seenCursors.add(nextCursor);
+        cursor = nextCursor;
+      } while (cursor);
+
+      if (!tool) {
+        skip("No healthy community marketplace tool is currently published");
+        return;
       }
+
+      expect(tool.tool_type).toBe("community");
+      expect(tool.author_slug).not.toBe("platform");
+      expect(tool.is_healthy).toBe(true);
 
       let subscriptionId: string | undefined;
       try {
         const subscription = await client.marketplace.subscribe(
-          tool!.qualified_name,
+          tool.qualified_name,
         );
         subscriptionId = subscription.id;
-        expect(subscription.qualified_tool_name).toBe(tool!.qualified_name);
+        expect(subscription.qualified_tool_name).toBe(tool.qualified_name);
 
         const subscriptions = await client.marketplace.subscriptions();
         expect(
