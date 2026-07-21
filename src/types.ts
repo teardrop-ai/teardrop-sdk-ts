@@ -522,6 +522,8 @@ export interface McpServerResponse {
   timeout_seconds: number;
   created_at: string;
   updated_at: string;
+  schema_hash?: string | null;
+  last_schema_changed_at?: string | null;
 }
 
 export interface TestMcpToolRequest {
@@ -569,6 +571,7 @@ export interface McpToolDefinition {
 
 export interface McpDiscoverResponse {
   server_id: string;
+  schema_changed: boolean;
   tools: Record<string, unknown>[];
 }
 
@@ -1367,6 +1370,7 @@ export interface A2ADelegationEvent {
   agent_url: string;
   agent_name: string | null;
   task_status: string;
+  task_type: string;
   cost_usdc: number;
   billing_method: string;
   settlement_tx: string | null;

@@ -35,6 +35,8 @@ const SERVER: OrgMcpServer = {
   timeout_seconds: 15,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
+  schema_hash: null,
+  last_schema_changed_at: null,
 };
 
 function makeMockHttp() {
@@ -288,6 +290,7 @@ describe("McpModule.discover", () => {
   it("returns the discovery response with tools", async () => {
     const discovery: DiscoverMcpToolsResponse = {
       server_id: "srv-1",
+      schema_changed: true,
       tools: [
         {
           name: "add",
@@ -299,12 +302,17 @@ describe("McpModule.discover", () => {
     vi.mocked(http.request).mockResolvedValue(discovery);
     const result = await module.discover("srv-1");
     expect(result.server_id).toBe("srv-1");
+    expect(result.schema_changed).toBe(true);
     expect(result.tools).toHaveLength(1);
     expect(result.tools[0].name).toBe("add");
   });
 
   it("calls POST /mcp/servers/:id/discover", async () => {
-    vi.mocked(http.request).mockResolvedValue({ server_id: "srv-1", tools: [] });
+    vi.mocked(http.request).mockResolvedValue({
+      server_id: "srv-1",
+      schema_changed: false,
+      tools: [],
+    });
     await module.discover("srv-1");
     expect(http.request).toHaveBeenCalledWith(
       "POST",
