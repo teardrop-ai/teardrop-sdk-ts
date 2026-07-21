@@ -71,6 +71,7 @@ await client.mcp.update(server.id, { auth_token: "sk-new-...", timeout_seconds: 
 
 // Live probe — bypasses agent TTL cache, does not mutate state
 const discovery = await client.mcp.discover(server.id);
+console.log(discovery.schema_changed); // true when the tool inventory changed
 for (const tool of discovery.tools) {
   console.log(tool.name, tool.description);
 }
@@ -109,6 +110,7 @@ parseMcpToolName("web_search");
 |---|---|
 | Quota | 5 active servers per org by default; 422 on breach |
 | Cache lag | New/updated servers are live within ~5 min (TTL 300 s); `/discover` bypasses cache |
+| Schema metadata | Server responses may include `schema_hash` and `last_schema_changed_at`; discovery reports changes with `schema_changed` |
 | Auth write-only | `auth_token` is write-only; only `has_auth: boolean` is returned |
 | Transport | Streamable HTTP only — stdio MCP servers are not supported |
 | SSRF | Server-side URL validation blocks private IPs and localhost |

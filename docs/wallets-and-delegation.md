@@ -59,6 +59,7 @@ await client.a2a.removeAgent(agent.id);
 
 // View delegation event history
 const delegations = await client.a2a.delegations({ limit: 20 });
+// Each event includes the delegated task type, status, cost, and settlement data.
 ```
 
 Trusted-agent mutations require an org-admin JWT with both `role=admin` and an

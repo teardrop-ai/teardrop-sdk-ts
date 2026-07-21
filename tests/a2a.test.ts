@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { A2AModule } from "../src/a2a";
 import type { HttpTransport } from "../src/transport";
-import type { TrustedAgent } from "../src/types";
+import type { A2ADelegationEvent, TrustedAgent } from "../src/types";
 
 function makeMockHttp() {
   return {
@@ -46,5 +46,41 @@ describe("A2AModule.listAgents", () => {
     vi.mocked(http.request).mockResolvedValue([]);
     const result = await a2a.listAgents();
     expect(result).toEqual([]);
+  });
+});
+
+describe("A2AModule.delegations", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let a2a: A2AModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    a2a = new A2AModule(http);
+  });
+
+  it("returns delegation history with task type", async () => {
+    const items: A2ADelegationEvent[] = [
+      {
+        id: "delegation-1",
+        run_id: "run-1",
+        agent_url: "https://agent.example.com",
+        agent_name: "Partner Agent",
+        task_status: "completed",
+        task_type: "research",
+        cost_usdc: 0.1,
+        billing_method: "x402",
+        settlement_tx: null,
+        error: null,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ];
+    vi.mocked(http.request).mockResolvedValue(items);
+
+    const result = await a2a.delegations({ limit: 20 });
+
+    expect(result[0].task_type).toBe("research");
+    expect(http.request).toHaveBeenCalledWith("GET", "/a2a/delegations", {
+      params: { limit: 20 },
+    });
   });
 });
