@@ -2,6 +2,7 @@ import type { HttpTransport } from "./transport";
 import type {
   MeResponse,
   TokenResponse,
+  RegisterRequest,
   AuthMeResponse,
   SiweNonceResponse,
   VerifyEmailResponse,
@@ -31,11 +32,7 @@ export class AuthModule {
   }
 
   /** Self-serve org + user registration. */
-  async register(params: {
-    org_name: string;
-    email: string;
-    password: string;
-  }): Promise<TokenResponse> {
+  async register(params: RegisterRequest): Promise<TokenResponse> {
     const data = await this.http.request<TokenResponse>("POST", "/register", {
       body: params,
       auth: false,

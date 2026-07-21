@@ -26,6 +26,8 @@ import type {
   SettlementRetryResponse,
   SpendingConfigUpdate,
   SweepStatusResponse,
+  TelemetryCompletenessBySource,
+  TelemetryCompletenessResponse,
   ToolPricingDeleteResponse,
   ToolPricingOverrideRequest,
   ToolPricingOverrideResponse,
@@ -273,6 +275,16 @@ export class AdminModule {
     return this.http.request<AdminMemoryPurgeResponse>(
       "DELETE",
       `/admin/memories/org/${encodeURIComponent(orgId)}`,
+    );
+  }
+
+  async getTelemetryCompleteness(params?: {
+    days?: number;
+  }): Promise<TelemetryCompletenessResponse> {
+    return this.http.request<TelemetryCompletenessResponse>(
+      "GET",
+      "/admin/telemetry/completeness",
+      { params: { days: params?.days } },
     );
   }
 }

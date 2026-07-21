@@ -254,4 +254,35 @@ describe("AdminModule", () => {
       "/admin/memories/org/org%2F1",
     );
   });
+
+  it("gets telemetry completeness with optional days filter", async () => {
+    const response = {
+      window_days: 7,
+      sources: [
+        {
+          source: "api",
+          total_runs: 10,
+          tool_eligible_runs: 8,
+          usage_event_coverage: 0.8,
+          decision_coverage: 0.7,
+          outcome_label_coverage: 0.6,
+          tool_event_coverage: 0.5,
+        },
+      ],
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+    await expect(admin.getTelemetryCompleteness({ days: 14 })).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/admin/telemetry/completeness",
+      { params: { days: 14 } },
+    );
+    vi.mocked(http.request).mockResolvedValue({ window_days: 7, sources: [] });
+    await admin.getTelemetryCompleteness();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/admin/telemetry/completeness",
+      { params: { days: undefined } },
+    );
+  });
 });

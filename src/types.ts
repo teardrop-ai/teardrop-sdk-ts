@@ -7,6 +7,15 @@ export interface TokenResponse {
   refresh_token?: string;
 }
 
+export interface RegisterRequest {
+  org_name: string;
+  email: string;
+  password: string;
+  /** Optional attribution source, max 64 chars. */
+  acquisition_source?: string;
+  captcha_token?: string | null;
+}
+
 export interface JwtPayloadBase {
   /** User ID — may be under `sub` or `user_id` depending on token generation. */
   sub?: string;
@@ -1195,6 +1204,21 @@ export interface AdminMemoryListResponse {
 export interface AdminMemoryPurgeResponse {
   status: "purged";
   deleted: number;
+}
+
+export interface TelemetryCompletenessBySource {
+  source: "api" | "schedule" | "trigger" | "a2a";
+  total_runs?: number;
+  tool_eligible_runs?: number;
+  usage_event_coverage?: number;
+  decision_coverage?: number;
+  outcome_label_coverage?: number;
+  tool_event_coverage?: number | null;
+}
+
+export interface TelemetryCompletenessResponse {
+  window_days: number;
+  sources: TelemetryCompletenessBySource[];
 }
 
 export interface WithdrawRequest {
