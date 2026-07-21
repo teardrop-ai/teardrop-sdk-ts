@@ -8,7 +8,7 @@ All request/response types are exported from `teardrop-sdk`.
 
 | Type(s) | Method |
 |---------|--------|
-| `TokenResponse`, `MeResponse` | `auth.login()`, `auth.me()` |
+| `TokenResponse`, `RegisterRequest`, `MeResponse` | `auth.login()`, `auth.register()`, `auth.me()` |
 | `SseEvent`, `EVENT_*` constants | `agent.run()` yields |
 | `CreditBalance` / `BillingBalance` | `billing.balance()` |
 | `BillingPricingResponse`, `ToolPricing` | `billing.pricing()` |
@@ -34,7 +34,7 @@ All request/response types are exported from `teardrop-sdk`.
 | `OrgCredentialsEntry`, `OrgCredentialsResponse`, `RegenerateCredentialsResponse` | `credentials.*` |
 | `TokenManager`, `HttpTransport` | Advanced: direct token control |
 | `HealthResponse` | `client.health()` |
-| Admin request/response types | `client.admin.*` (server-enforced admin role) |
+| Admin request/response types, including `TelemetryCompletenessBySource`, `TelemetryCompletenessResponse` | `client.admin.*` (server-enforced admin role) |
 
 Import any type directly:
 

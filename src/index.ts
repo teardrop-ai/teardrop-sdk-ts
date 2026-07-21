@@ -42,6 +42,7 @@ export {
 // Types
 export type {
   TokenResponse,
+  RegisterRequest,
   JwtPayloadBase,
   JwtPayloadSiwe,
   MeResponse,
@@ -252,6 +253,8 @@ export type {
   AdminMemoryItem,
   AdminMemoryListResponse,
   AdminMemoryPurgeResponse,
+  TelemetryCompletenessBySource,
+  TelemetryCompletenessResponse,
 } from "./types";
 
 // Constants

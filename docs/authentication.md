@@ -36,6 +36,8 @@ const tokens = await client.auth.register({
   org_name: "My Company",
   email: "you@example.com",
   password: "...",
+  // optional: attribution source (max 64 chars)
+  acquisition_source: "docs",
 });
 ```
 

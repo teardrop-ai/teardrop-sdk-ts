@@ -193,6 +193,25 @@ describe("AuthModule.register", () => {
     );
   });
 
+  it("passes optional acquisition_source", async () => {
+    vi.mocked(http.request).mockResolvedValue(TOKEN_RESPONSE);
+    await auth.register({
+      org_name: "Acme",
+      email: "a@b.com",
+      password: "pw",
+      acquisition_source: "docs",
+    });
+    expect(http.request).toHaveBeenCalledWith("POST", "/register", {
+      body: {
+        org_name: "Acme",
+        email: "a@b.com",
+        password: "pw",
+        acquisition_source: "docs",
+      },
+      auth: false,
+    });
+  });
+
   it("stores the returned access_token", async () => {
     vi.mocked(http.request).mockResolvedValue(TOKEN_RESPONSE);
     await auth.register({ org_name: "Acme", email: "a@b.com", password: "pw" });
