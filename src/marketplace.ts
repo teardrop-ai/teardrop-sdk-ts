@@ -17,6 +17,7 @@ import type {
   MarketplaceSubscriptionResponse,
   MarketplaceWithdrawalResponse,
   MarketplaceWithdrawalsListResponse,
+  PublicReputationResponse,
   UnsubscribeResponse,
   WithdrawRequest,
 } from "./types";
@@ -73,6 +74,18 @@ export class MarketplaceModule {
     return this.http.request<MarketplaceCatalogDetailResponse>(
       "GET",
       `/marketplace/catalog/${encodeURIComponent(orgSlug)}/${encodeURIComponent(toolName)}`,
+      { auth: false },
+    );
+  }
+
+  /**
+   * Fetch public aggregate quality metrics for active marketplace tools
+   * from `/.well-known/reputation.json` (no auth required).
+   */
+  async getPublicReputation(): Promise<PublicReputationResponse> {
+    return this.http.request<PublicReputationResponse>(
+      "GET",
+      "/.well-known/reputation.json",
       { auth: false },
     );
   }

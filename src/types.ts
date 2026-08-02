@@ -799,6 +799,8 @@ export interface MarketplaceToolSummary {
   category: string;
   total_calls: number;
   reputation_score: number;
+  success_rate: number;
+  unique_caller_count?: number | null;
   health_status: string;
   is_healthy: boolean;
   author: string;
@@ -806,6 +808,26 @@ export interface MarketplaceToolSummary {
 }
 
 export type MarketplaceTool = MarketplaceToolSummary;
+
+/** Per-tool public quality metrics served from `/.well-known/reputation.json`. */
+export interface PublicToolReputation {
+  qualified_tool_name: string;
+  reputation_score: number;
+  success_rate: number;
+  sample_size: number;
+  confidence: number;
+  freshness: number;
+  average_latency_ms: number;
+  unique_caller_count?: number | null;
+}
+
+/** Public aggregate quality metrics for active marketplace tools. */
+export interface PublicReputationResponse {
+  schema_version: string;
+  generated_at: string | null;
+  methodology_url: string;
+  tools: PublicToolReputation[];
+}
 
 export interface MarketplaceCatalogResponse {
   tools: MarketplaceToolSummary[];

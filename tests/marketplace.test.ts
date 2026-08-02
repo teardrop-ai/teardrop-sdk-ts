@@ -41,6 +41,8 @@ const SAMPLE_TOOL: MarketplaceToolSummary = {
   category: "search",
   total_calls: 10,
   reputation_score: 4.8,
+  success_rate: 0.95,
+  unique_caller_count: 7,
   health_status: "healthy",
   is_healthy: true,
 };
@@ -208,6 +210,34 @@ describe("MarketplaceModule public catalog details", () => {
       { auth: false },
     );
     expect(result.tool.name).toBe("acme/web_search");
+  });
+
+  it("fetches public reputation metrics without auth", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      schema_version: "1.0",
+      generated_at: "2026-08-02T00:00:00Z",
+      methodology_url: "https://teardrop.dev/reputation-methodology",
+      tools: [
+        {
+          qualified_tool_name: "acme/web_search",
+          reputation_score: 4.8,
+          success_rate: 0.95,
+          sample_size: 120,
+          confidence: 0.9,
+          freshness: 0.8,
+          average_latency_ms: 250,
+          unique_caller_count: 7,
+        },
+      ],
+    });
+    const result = await mp.getPublicReputation();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/.well-known/reputation.json",
+      { auth: false },
+    );
+    expect(result.tools[0].qualified_tool_name).toBe("acme/web_search");
+    expect(result.tools[0].success_rate).toBe(0.95);
   });
 });
 
