@@ -44,6 +44,21 @@ const detail = await client.marketplace.getCatalogDetail("acme", "web_search");
 console.log(author.org_name, author.tool_count, detail.tool.qualified_name);
 ```
 
+## Public Reputation (Public)
+
+Aggregate quality metrics for active marketplace tools, served from
+`/.well-known/reputation.json` (no auth required). Each tool entry includes
+`reputation_score`, `success_rate`, `sample_size`, `confidence`, `freshness`,
+and `average_latency_ms`.
+
+```typescript
+const reputation = await client.marketplace.getPublicReputation();
+console.log(reputation.schema_version, reputation.generated_at);
+for (const tool of reputation.tools) {
+  console.log(`${tool.qualified_tool_name}: score=${tool.reputation_score}, success=${tool.success_rate}`);
+}
+```
+
 ## Subscriptions & Integration
 
 ```typescript

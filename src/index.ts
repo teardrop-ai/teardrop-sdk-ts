@@ -161,6 +161,8 @@ export type {
   MarketplaceCatalogResponse,
   MarketplaceAuthorProfileResponse,
   MarketplaceCatalogDetailResponse,
+  PublicReputationResponse,
+  PublicToolReputation,
   MarketplaceAuthorConfigResponse,
   MarketplaceBalanceResponse,
   MarketplaceEarningEntry,

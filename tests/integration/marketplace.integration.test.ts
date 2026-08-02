@@ -44,6 +44,18 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
     expect(result.tools.length).toBeLessThanOrEqual(1);
   });
 
+  it("getPublicReputation() returns aggregate quality metrics without auth", async () => {
+    const client = makeClient();
+    const result = await client.marketplace.getPublicReputation();
+    expect(typeof result.schema_version).toBe("string");
+    expect(Array.isArray(result.tools)).toBe(true);
+    for (const tool of result.tools) {
+      expect(typeof tool.qualified_tool_name).toBe("string");
+      expect(typeof tool.reputation_score).toBe("number");
+      expect(typeof tool.success_rate).toBe("number");
+    }
+  });
+
   it("subscriptions() returns an array after authentication", async () => {
     const client = await makeAuthedClient();
     const subs = await client.marketplace.subscriptions();
