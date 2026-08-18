@@ -102,6 +102,16 @@ describe("EventTriggersModule.create", () => {
     expect(http.request).not.toHaveBeenCalled();
   });
 
+  it("accepts prompts up to the spec maximum", async () => {
+    vi.mocked(http.request).mockResolvedValue(TRIGGER_WITH_SECRET);
+    const req: CreateEventTriggerRequest = {
+      name: "On Payment Inbound",
+      prompt: "x".repeat(12_000),
+    };
+
+    await expect(module.create(req)).resolves.toEqual(TRIGGER_WITH_SECRET);
+  });
+
   it("throws ValidationError when callback_url is non-https", async () => {
     const req: CreateEventTriggerRequest = {
       name: "On Payment Inbound",
@@ -200,6 +210,36 @@ describe("EventTriggersModule.rotateSecret", () => {
     expect(http.request).toHaveBeenCalledWith(
       "POST",
       "/agent/event-triggers/evt-trigger-123/rotate-secret",
+    );
+  });
+});
+
+describe("EventTriggersModule.getRun", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let module: EventTriggersModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    module = new EventTriggersModule(http);
+  });
+
+  it("fetches a trigger run by schedule and run IDs", async () => {
+    const response = {
+      id: "run-123",
+      contextId: "ctx-123",
+      status: {
+        state: "TASK_STATE_COMPLETED",
+        timestamp: "2026-08-17T12:00:00Z",
+      },
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(module.getRun("trigger/123", "run/456")).resolves.toEqual(
+      response,
+    );
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/agent/event-triggers/trigger%2F123/runs/run%2F456",
     );
   });
 });

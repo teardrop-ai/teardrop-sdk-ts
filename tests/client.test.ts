@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TeardropClient } from "../src/client";
+import { LabelingModule } from "../src/labeling";
 
 describe("TeardropClient.health", () => {
   afterEach(() => {
@@ -28,5 +29,13 @@ describe("TeardropClient.health", () => {
         headers: { "Content-Type": "application/json" },
       }),
     );
+  });
+});
+
+describe("TeardropClient.labeling", () => {
+  it("wires the labeling resource module", () => {
+    const client = new TeardropClient({ baseUrl: "https://api.example.com" });
+
+    expect(client.labeling).toBeInstanceOf(LabelingModule);
   });
 });

@@ -3,6 +3,7 @@ import { ValidationError } from "./errors";
 import type {
   CreateEventTriggerRequest,
   EventDispatchResponse,
+  EventTaskResponse,
   EventTriggerItem,
   EventTriggerCreatedResponse,
   RotateEventTriggerSecretResponse,
@@ -16,7 +17,7 @@ import { parseListResponse } from "./utils/parseListResponse";
 const NAME_MIN_LENGTH = 1;
 const NAME_MAX_LENGTH = 120;
 const PROMPT_MIN_LENGTH = 1;
-const PROMPT_MAX_LENGTH = 8000;
+const PROMPT_MAX_LENGTH = 12000;
 const MAX_EVENT_PAYLOAD_BYTES = 64 * 1024;
 
 export class EventTriggersModule {
@@ -66,6 +67,13 @@ export class EventTriggersModule {
     return this.http.request<RotateEventTriggerSecretResponse>(
       "POST",
       `/agent/event-triggers/${encodeURIComponent(id)}/rotate-secret`,
+    );
+  }
+
+  async getRun(scheduleId: string, runId: string): Promise<EventTaskResponse> {
+    return this.http.request<EventTaskResponse>(
+      "GET",
+      `/agent/event-triggers/${encodeURIComponent(scheduleId)}/runs/${encodeURIComponent(runId)}`,
     );
   }
 
@@ -121,8 +129,12 @@ export class EventTriggersModule {
   }
 
   private validateUpdateInput(data: UpdateEventTriggerRequest): void {
-    if (data.name !== undefined) this.validateName(data.name);
-    if (data.prompt !== undefined) this.validatePrompt(data.prompt);
+    if (data.name !== undefined && data.name !== null) {
+      this.validateName(data.name);
+    }
+    if (data.prompt !== undefined && data.prompt !== null) {
+      this.validatePrompt(data.prompt);
+    }
     this.validateCallbackUrl(data.callback_url);
   }
 

@@ -33,6 +33,7 @@ const TOOL: OrgTool = {
   marketplace_description: null,
   base_price_usdc: null,
   category: "",
+  tags: [],
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };

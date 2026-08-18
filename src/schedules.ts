@@ -5,6 +5,7 @@ import type {
   ScheduledRun,
   UpdateScheduledRunRequest,
   ScheduleDeletedResponse,
+  ScheduleRunNowResponse,
   ScheduledRunResultsResponse,
   ScheduledRunResultItem,
 } from "./types";
@@ -13,7 +14,7 @@ import { parseListResponse } from "./utils/parseListResponse";
 const NAME_MIN_LENGTH = 1;
 const NAME_MAX_LENGTH = 120;
 const PROMPT_MIN_LENGTH = 1;
-const PROMPT_MAX_LENGTH = 8000;
+const PROMPT_MAX_LENGTH = 12000;
 const MIN_INTERVAL_SECONDS = 1;
 
 export class SchedulesModule {
@@ -57,6 +58,13 @@ export class SchedulesModule {
     );
   }
 
+  async runNow(id: string): Promise<ScheduleRunNowResponse> {
+    return this.http.request<ScheduleRunNowResponse>(
+      "POST",
+      `/agent/schedules/${encodeURIComponent(id)}/run`,
+    );
+  }
+
   async runs(
     id: string,
     params?: { limit?: number; cursor?: string },
@@ -85,9 +93,13 @@ export class SchedulesModule {
   }
 
   private validateUpdateInput(data: UpdateScheduledRunRequest): void {
-    if (data.name !== undefined) this.validateName(data.name);
-    if (data.prompt !== undefined) this.validatePrompt(data.prompt);
-    if (data.interval_seconds !== undefined) {
+    if (data.name !== undefined && data.name !== null) {
+      this.validateName(data.name);
+    }
+    if (data.prompt !== undefined && data.prompt !== null) {
+      this.validatePrompt(data.prompt);
+    }
+    if (data.interval_seconds !== undefined && data.interval_seconds !== null) {
       this.validateInterval(data.interval_seconds);
     }
     this.validateCallbackUrl(data.callback_url);
