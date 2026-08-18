@@ -4,6 +4,7 @@ import { SchedulesModule } from "../src/schedules";
 import type { HttpTransport } from "../src/transport";
 import type {
   CreateScheduledRunRequest,
+  ScheduleRunNowResponse,
   ScheduledRun,
   ScheduledRunResult,
   UpdateScheduledRunRequest,
@@ -93,6 +94,17 @@ describe("SchedulesModule.create", () => {
     expect(http.request).not.toHaveBeenCalled();
   });
 
+  it("accepts prompts up to the spec maximum", async () => {
+    vi.mocked(http.request).mockResolvedValue(SCHEDULE);
+    const req: CreateScheduledRunRequest = {
+      name: "Daily Summary",
+      prompt: "x".repeat(12_000),
+      interval_seconds: 300,
+    };
+
+    await expect(module.create(req)).resolves.toEqual(SCHEDULE);
+  });
+
   it("throws ValidationError when callback_url is non-https", async () => {
     const req: CreateScheduledRunRequest = {
       name: "Daily Summary",
@@ -168,6 +180,26 @@ describe("SchedulesModule.update", () => {
     );
     expect(http.request).not.toHaveBeenCalled();
   });
+
+  it("passes null values through for intentional clears", async () => {
+    const req: UpdateScheduledRunRequest = {
+      name: null,
+      prompt: null,
+      interval_seconds: null,
+      enabled: null,
+      callback_url: null,
+      callback_format: null,
+    };
+    vi.mocked(http.request).mockResolvedValue(SCHEDULE);
+
+    await module.update("sched-123", req);
+
+    expect(http.request).toHaveBeenCalledWith(
+      "PATCH",
+      "/agent/schedules/sched-123",
+      { body: req },
+    );
+  });
 });
 
 describe("SchedulesModule.delete", () => {
@@ -188,6 +220,31 @@ describe("SchedulesModule.delete", () => {
     expect(http.request).toHaveBeenCalledWith(
       "DELETE",
       "/agent/schedules/sched-123",
+    );
+  });
+});
+
+describe("SchedulesModule.runNow", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let module: SchedulesModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    module = new SchedulesModule(http);
+  });
+
+  it("queues an immediate scheduled run", async () => {
+    const response: ScheduleRunNowResponse = {
+      schedule_id: "sched-123",
+      status: "queued",
+      next_run_at: "2026-08-17T12:00:00Z",
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(module.runNow("sched/123")).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/agent/schedules/sched%2F123/run",
     );
   });
 });

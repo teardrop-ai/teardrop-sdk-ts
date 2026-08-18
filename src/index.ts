@@ -21,6 +21,7 @@ export { LlmModule } from "./llmConfig";
 export { ModelsModule } from "./models";
 export { A2AModule } from "./a2a";
 export { AdminModule } from "./admin";
+export { LabelingModule } from "./labeling";
 
 // Transport (TokenManager exported for advanced use)
 export { TokenManager } from "./transport";
@@ -200,6 +201,21 @@ export type {
   TestMcpToolResponse,
   OrgToolResponse,
   ToolDeletedResponse,
+  LabelingBindingRequest,
+  LabelingBindingResponse,
+  LabelingDefinitionItem,
+  LabelingDefinitionListResponse,
+  LabelingOverrideResponse,
+  LabelingPredictionItem,
+  LabelingPredictionListResponse,
+  LabelingResultItem,
+  LabelingResultListResponse,
+  ScoreResult,
+  EventTaskArtifactPart,
+  EventTaskArtifact,
+  EventTaskStatus,
+  EventTaskResponse,
+  ScheduleRunNowResponse,
   SubscriptionsResponse,
   ProviderType,
   RoutingPreference,

@@ -311,14 +311,17 @@ export interface CreateScheduledRunRequest {
   prompt: string;
   interval_seconds: number;
   callback_url?: string | null;
+  callback_format?: "json" | "text";
+  first_run_at?: string | null;
 }
 
 export interface UpdateScheduledRunRequest {
-  name?: string;
-  prompt?: string;
-  interval_seconds?: number;
-  enabled?: boolean;
+  name?: string | null;
+  prompt?: string | null;
+  interval_seconds?: number | null;
+  enabled?: boolean | null;
   callback_url?: string | null;
+  callback_format?: "json" | "text" | null;
 }
 
 export interface ScheduledRunItem {
@@ -331,6 +334,7 @@ export interface ScheduledRunItem {
   interval_seconds: number;
   enabled: boolean;
   callback_url: string | null;
+  callback_format?: "json" | "text";
   next_run_at: string;
   last_run_at: string | null;
   consecutive_failures: number;
@@ -373,9 +377,9 @@ export interface CreateEventTriggerRequest {
 }
 
 export interface UpdateEventTriggerRequest {
-  name?: string;
-  prompt?: string;
-  enabled?: boolean;
+  name?: string | null;
+  prompt?: string | null;
+  enabled?: boolean | null;
   callback_url?: string | null;
 }
 
@@ -434,6 +438,125 @@ export interface RotateEventTriggerSecretResponse {
   secret: string;
 }
 
+export interface EventTaskArtifactPart {
+  text: string;
+}
+
+export interface EventTaskArtifact {
+  artifactId: string;
+  name: string;
+  parts: EventTaskArtifactPart[];
+}
+
+export interface EventTaskStatus {
+  state:
+    | "TASK_STATE_SUBMITTED"
+    | "TASK_STATE_COMPLETED"
+    | "TASK_STATE_FAILED"
+    | "TASK_STATE_REJECTED";
+  timestamp: string;
+}
+
+export interface EventTaskResponse {
+  id: string;
+  contextId: string;
+  status: EventTaskStatus;
+  artifacts?: EventTaskArtifact[];
+  metadata?: Record<string, string>;
+}
+
+export interface ScheduleRunNowResponse {
+  schedule_id: string;
+  status: "queued";
+  next_run_at: string;
+}
+
+export interface LabelingBindingRequest {
+  schedule_id: string;
+  definition_key: string;
+  definition_version: number;
+}
+
+export interface LabelingBindingResponse {
+  id: string;
+  schedule_id: string;
+  definition_key: string;
+  definition_version: number;
+  status: "created";
+}
+
+export interface LabelingDefinitionItem {
+  definition_key: string;
+  definition_version: number;
+  prediction_schema: Record<string, unknown>;
+  target_schema: Record<string, unknown>;
+  outcome_schema: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+}
+
+export interface LabelingDefinitionListResponse {
+  items: LabelingDefinitionItem[];
+}
+
+export interface LabelingOverrideResponse {
+  status: "recorded";
+}
+
+export interface LabelingPredictionItem {
+  id: string;
+  source_kind: string;
+  source_id: string;
+  run_id: string;
+  schedule_id: string;
+  definition_key: string;
+  definition_version: number;
+  predictions: Record<string, unknown>;
+  payload_sha256: string;
+  prediction_at: string;
+  status: string;
+  parse_error: string;
+  created_at: string;
+}
+
+export interface LabelingPredictionListResponse {
+  items: LabelingPredictionItem[];
+}
+
+export interface LabelingResultItem {
+  id: string;
+  target_id: string;
+  scorer_key: string;
+  scorer_version: string;
+  observation_id: string | null;
+  actual: Record<string, unknown> | null;
+  label: string;
+  score: number | null;
+  status: string;
+  source: string;
+  rationale: string;
+  created_at: string;
+}
+
+export interface LabelingResultListResponse {
+  items: LabelingResultItem[];
+}
+
+export interface ScoreResult {
+  actual?: Record<string, unknown> | null;
+  label: string;
+  rationale?: string;
+  score?: number | null;
+  source?: "automatic" | "external" | "manual";
+  status:
+    | "correct"
+    | "incorrect"
+    | "neutral"
+    | "inconclusive"
+    | "unavailable"
+    | "invalid";
+}
+
 // ── Org Webhook Tools ────────────────────────────────────────────────────────
 
 export interface OrgToolResponse {
@@ -454,6 +577,7 @@ export interface OrgToolResponse {
   marketplace_description: string | null;
   base_price_usdc: number | null;
   category: string;
+  tags: string[];
   created_at: string;
   updated_at: string;
 }
@@ -478,6 +602,7 @@ export interface CreateOrgToolRequest {
   publish_as_mcp?: boolean;
   marketplace_description?: string;
   base_price_usdc?: number;
+  tags?: string[];
 }
 
 export interface UpdateOrgToolRequest {
@@ -494,6 +619,7 @@ export interface UpdateOrgToolRequest {
   publish_as_mcp?: boolean;
   marketplace_description?: string;
   base_price_usdc?: number;
+  tags?: string[] | null;
 }
 
 export interface TestWebhookRequest {
@@ -1207,6 +1333,7 @@ export interface SweepStatusItem {
 
 export interface SweepStatusResponse {
   pending: SweepStatusItem[];
+  in_flight: SweepStatusItem[];
   exhausted: SweepStatusItem[];
 }
 
