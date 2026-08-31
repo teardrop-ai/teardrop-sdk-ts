@@ -21,6 +21,9 @@ import type {
   OrgToolResponse,
   MarketplaceSweepResponse,
   PendingSettlementsResponse,
+  PossiblyDeliveredDelegationItem,
+  ResolveA2ADelegationRequest,
+  ResolveA2ADelegationResponse,
   RevenueSummaryResponse,
   SettlementBalanceResponse,
   SettlementRetryResponse,
@@ -36,6 +39,7 @@ import type {
   WithdrawalResetResponse,
   McpServerResponse,
 } from "./types";
+import { parseListResponse } from "./utils/parseListResponse";
 
 /** Administrative API operations using the same bearer-authenticated transport. */
 export class AdminModule {
@@ -156,6 +160,30 @@ export class AdminModule {
     return this.http.request<AdminA2AAgentListItem[]>(
       "GET",
       `/admin/a2a/agents/${encodeURIComponent(orgId)}`,
+    );
+  }
+
+  /** List delegations that may have been delivered despite a failed response. */
+  async listPossiblyDeliveredDelegations(params?: {
+    org_id?: string | null;
+  }): Promise<PossiblyDeliveredDelegationItem[]> {
+    const data = await this.http.request<unknown>(
+      "GET",
+      "/admin/a2a/delegations/possibly-delivered",
+      { params: { org_id: params?.org_id ?? undefined } },
+    );
+    return parseListResponse<PossiblyDeliveredDelegationItem>(data).items;
+  }
+
+  /** Resolve a possibly-delivered delegation as confirmed or failed. */
+  async resolveA2ADelegation(
+    delegationId: string,
+    data: ResolveA2ADelegationRequest,
+  ): Promise<ResolveA2ADelegationResponse> {
+    return this.http.request<ResolveA2ADelegationResponse>(
+      "POST",
+      `/admin/a2a/delegations/${encodeURIComponent(delegationId)}/resolve`,
+      { body: data },
     );
   }
 

@@ -84,3 +84,35 @@ describe("A2AModule.delegations", () => {
     });
   });
 });
+
+describe("A2AModule.messageStatus", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let a2a: A2AModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    a2a = new A2AModule(http);
+  });
+
+  it("calls GET /message:status/{task_id} preserving the colon in the path", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      status: "completed",
+      result: { text: "done" },
+    });
+    const result = await a2a.messageStatus("task-123");
+    expect(result).toEqual({ status: "completed", result: { text: "done" } });
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/message:status/task-123",
+    );
+  });
+
+  it("URL-encodes a task id containing slashes", async () => {
+    vi.mocked(http.request).mockResolvedValue({ status: "pending" });
+    await a2a.messageStatus("task/1");
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/message:status/task%2F1",
+    );
+  });
+});

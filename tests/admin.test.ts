@@ -285,4 +285,70 @@ describe("AdminModule", () => {
       { params: { days: undefined } },
     );
   });
+
+  it("lists possibly-delivered delegations with optional org_id filter", async () => {
+    const item = {
+      id: "del-1",
+      org_id: "org-1",
+      run_id: "run-1",
+      amount_usdc: 100,
+      refund_status: "pending",
+      delivery_status: "possibly_delivered",
+    };
+    vi.mocked(http.request).mockResolvedValue([item]);
+    const result = await admin.listPossiblyDeliveredDelegations({ org_id: "org-1" });
+    expect(result).toHaveLength(1);
+    expect(result[0].delivery_status).toBe("possibly_delivered");
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/admin/a2a/delegations/possibly-delivered",
+      { params: { org_id: "org-1" } },
+    );
+    vi.mocked(http.request).mockResolvedValue([]);
+    await admin.listPossiblyDeliveredDelegations();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/admin/a2a/delegations/possibly-delivered",
+      { params: { org_id: undefined } },
+    );
+  });
+
+  it("normalizes an items envelope for possibly-delivered delegations", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      items: [
+        {
+          id: "del-2",
+          org_id: "org-1",
+          run_id: "run-2",
+          amount_usdc: 100,
+          refund_status: "pending",
+          delivery_status: "possibly_delivered",
+        },
+      ],
+      next_cursor: null,
+    });
+    const result = await admin.listPossiblyDeliveredDelegations();
+    expect(result.map((item) => item.id)).toEqual(["del-2"]);
+  });
+
+  it("resolves a possibly-delivered delegation", async () => {
+    const body = {
+      org_id: "org-1",
+      outcome: "confirmed" as const,
+      settlement_tx: "0xabc",
+    };
+    vi.mocked(http.request).mockResolvedValue({
+      id: "del-1",
+      org_id: "org-1",
+      outcome: "confirmed",
+      refund_status: "none",
+    });
+    const result = await admin.resolveA2ADelegation("del/1", body);
+    expect(result.outcome).toBe("confirmed");
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/admin/a2a/delegations/del%2F1/resolve",
+      { body },
+    );
+  });
 });

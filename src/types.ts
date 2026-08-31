@@ -44,6 +44,31 @@ export interface AuthMeResponse {
   address?: string | null;
   chain_id?: number | null;
   org_name?: string | null;
+  /** Present when org_id is set. */
+  org_slug?: string | null;
+}
+
+/** Request body for POST /token — one of the four grant modes. */
+export interface TokenRequest {
+  email?: string | null;
+  secret?: string | null;
+  client_id?: string | null;
+  client_secret?: string | null;
+  siwe_message?: string | null;
+  siwe_signature?: string | null;
+  /** `x402` selects payment-first org bootstrap (requires the X-Payment header). */
+  grant_type?: "x402" | null;
+}
+
+/** Response from POST /token with grant_type=x402 — JWT plus one-time client credential. */
+export interface X402BootstrapResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  org_id: string;
+  client_id: string;
+  /** One-time secret on first bootstrap; omitted when the existing credential is reused. */
+  client_secret?: string | null;
 }
 
 export interface SiweNonceResponse {
@@ -900,6 +925,21 @@ export interface UsdcTopupResponse {
   tx_hash: string;
 }
 
+// ── Principal Spend Limits ──────────────────────────────────────────────────
+
+export interface PrincipalSpendLimitRequest {
+  daily_limit_usdc: number;
+  is_paused?: boolean;
+}
+
+export interface PrincipalSpendLimitResponse {
+  principal_id: string;
+  daily_limit_usdc: number;
+  is_paused: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Usage ────────────────────────────────────────────────────────────────────
 
 export interface UsageSummary {
@@ -1132,6 +1172,68 @@ export interface RunFeedbackResponse {
   qualified_tool_name: string;
   rating: RunOutcomeRating;
   created_at: string;
+}
+
+// ── Marketplace Agent Directory & Quotes ────────────────────────────────────
+
+/** Register (or update) the org's A2A agent endpoint for marketplace discovery. */
+export interface MarketplaceAgentRegistrationRequest {
+  agent_url: string;
+}
+
+export interface MarketplaceAgentRegistrationResponse {
+  org_id: string;
+  agent_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Public summary of a registered marketplace agent. */
+export interface MarketplaceAgentSummary {
+  org_slug: string;
+  org_name: string;
+  agent_url: string;
+  agent_card_url: string;
+  message_endpoint: string;
+  catalog_endpoint: string;
+  tool_count: number;
+  reputation_score?: number | null;
+  success_rate?: number | null;
+  sample_size?: number | null;
+  confidence?: number | null;
+  unique_caller_count?: number | null;
+  is_stale?: boolean | null;
+  last_event_at?: string | null;
+}
+
+/** Cursor-paginated public agent directory. */
+export interface MarketplaceAgentDirectoryResponse {
+  agents: MarketplaceAgentSummary[];
+  next_cursor?: string | null;
+}
+
+/** Public summary of a marketplace author org. */
+export interface MarketplaceAuthorSummary {
+  org_slug: string;
+  org_name: string;
+  tool_count: number;
+  total_calls: number;
+}
+
+/** Cursor-paginated public author index. */
+export interface MarketplaceAuthorIndexResponse {
+  authors: MarketplaceAuthorSummary[];
+  next_cursor?: string | null;
+}
+
+/** Atomic-USDC price quote for a marketplace tool. */
+export interface MarketplaceQuoteResponse {
+  qualified_name: string;
+  price_usdc: number;
+  source: "override" | "marketplace";
+  /** ISO 8601 advisory expiry matching the active pricing-cache TTL. */
+  expires_at: string;
+  currency?: "USDC";
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────
@@ -1549,6 +1651,46 @@ export interface A2ADelegationEvent {
   settlement_tx: string | null;
   error: string | null;
   created_at: string | null;
+  /** Delivery tracking — present once the delegation enters delivery. */
+  delivery_status?: string;
+  delivery_error?: string | null;
+  /** ISO 8601 timestamp; null while unresolved. */
+  delivery_resolved_at?: string | null;
+  delivery_settlement_tx?: string | null;
+}
+
+/** Admin view of a delegation that may have been delivered despite a failed response. */
+export interface PossiblyDeliveredDelegationItem {
+  id: string;
+  org_id: string;
+  run_id: string;
+  amount_usdc: number;
+  refund_status: string;
+  delivery_status: "possibly_delivered";
+  agent_name?: string | null;
+  agent_url?: string | null;
+  billing_method?: string | null;
+  created_at?: string | null;
+  delivery_error?: string | null;
+  delivery_settlement_tx?: string | null;
+  delivery_started_at?: string | null;
+  settlement_tx?: string | null;
+  task_status?: string | null;
+  task_type?: string | null;
+}
+
+export interface ResolveA2ADelegationRequest {
+  org_id: string;
+  outcome: "confirmed" | "failed";
+  reason?: string;
+  settlement_tx?: string | null;
+}
+
+export interface ResolveA2ADelegationResponse {
+  id: string;
+  org_id: string;
+  outcome: string;
+  refund_status: string;
 }
 
 /** @deprecated Use OrgCreateA2AAgentRequest instead. */

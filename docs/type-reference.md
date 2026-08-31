@@ -60,7 +60,8 @@ servers, or inbound receiver surfaces:
 - `POST /mcp/v1` is the server-side MCP Streamable HTTP JSON-RPC handler; use
 	`client.mcp` for Teardrop's authenticated server registration and diagnostics.
 - `POST /message:send` is the inbound A2A blocking message endpoint; `client.a2a`
-	only calls the Teardrop REST delegation endpoints.
+	only calls the Teardrop REST delegation endpoints. The async counterpart
+	`GET /message:status/{task_id}` is covered by `client.a2a.messageStatus()`.
 
 Webhook receiver hosting and signature verification, admin authorization,
 settlement execution, and other server-side policy also remain server concerns.

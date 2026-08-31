@@ -137,3 +137,76 @@ describe("BillingModule.creditHistory", () => {
     expect(result.next_cursor).toBeNull();
   });
 });
+
+describe("BillingModule spend limits", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let billing: BillingModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    billing = new BillingModule(http);
+  });
+
+  it("lists principal spend limits as a bare array", async () => {
+    vi.mocked(http.request).mockResolvedValue([
+      {
+        principal_id: "principal-1",
+        daily_limit_usdc: 5_000_000,
+        is_paused: false,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ]);
+    const result = await billing.spendLimits();
+    expect(result).toHaveLength(1);
+    expect(result[0].daily_limit_usdc).toBe(5_000_000);
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/org/principals/spend-limits",
+    );
+  });
+
+  it("normalizes an items envelope for principal spend limits", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      items: [
+        {
+          principal_id: "principal-2",
+          daily_limit_usdc: 1_000_000,
+          is_paused: true,
+          created_at: "2026-01-01T00:00:00Z",
+          updated_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+      next_cursor: null,
+    });
+    const result = await billing.spendLimits();
+    expect(result.map((item) => item.principal_id)).toEqual(["principal-2"]);
+  });
+
+  it("upserts a principal spend limit", async () => {
+    const body = { daily_limit_usdc: 5_000_000, is_paused: false };
+    vi.mocked(http.request).mockResolvedValue({
+      principal_id: "principal/1",
+      daily_limit_usdc: 5_000_000,
+      is_paused: false,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    const result = await billing.setSpendLimit("principal/1", body);
+    expect(result.principal_id).toBe("principal/1");
+    expect(http.request).toHaveBeenCalledWith(
+      "PUT",
+      "/org/principals/principal%2F1/spend-limit",
+      { body },
+    );
+  });
+
+  it("deletes a principal spend limit", async () => {
+    vi.mocked(http.request).mockResolvedValue(undefined);
+    await billing.deleteSpendLimit("principal/1");
+    expect(http.request).toHaveBeenCalledWith(
+      "DELETE",
+      "/org/principals/principal%2F1/spend-limit",
+    );
+  });
+});

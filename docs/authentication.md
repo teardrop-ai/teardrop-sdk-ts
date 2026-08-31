@@ -73,7 +73,34 @@ await client.auth.logout(refreshToken);
 
 ```typescript
 const me = await client.auth.me();
-// → { sub, user_id, org_id, org_name, role, auth_method, email, ... }
+// → { sub, user_id, org_id, org_name, org_slug, role, auth_method, email, ... }
+```
+
+## x402 Payment-First Bootstrap
+
+Pay to create an org and receive a JWT plus a one-time client credential.
+Resolve the x402 payment challenge externally, then pass the signed payment
+header:
+
+```typescript
+import { PaymentRequiredError } from "teardrop-sdk";
+
+// 1. Attempt a call that requires payment, catch the challenge
+try {
+  for await (const _event of client.agent.run({ message: "..." })) {
+    // Consume the stream until the payment challenge is raised.
+  }
+} catch (e) {
+  if (e instanceof PaymentRequiredError) {
+    // 2. Sign the payment externally using e.paymentHeader
+    const signed = await signX402Payment(e.paymentHeader);
+
+    // 3. Bootstrap the org
+    const boot = await client.auth.loginX402(signed);
+    // → { access_token, token_type, expires_in, org_id, client_id, client_secret? }
+    // client_secret is present only on first bootstrap; store it securely.
+  }
+}
 ```
 
 ## Org Credentials

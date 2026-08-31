@@ -7,6 +7,8 @@ import type {
   CreditHistoryResponse,
   Invoice,
   InvoiceListResponse,
+  PrincipalSpendLimitRequest,
+  PrincipalSpendLimitResponse,
   StripeTopupRequest,
   StripeTopupResponse,
   StripeTopupStatusResponse,
@@ -121,6 +123,35 @@ export class BillingModule {
       "POST",
       "/billing/topup/usdc",
       { body: data },
+    );
+  }
+
+  /** List per-principal daily spend limits. */
+  async spendLimits(): Promise<PrincipalSpendLimitResponse[]> {
+    const data = await this.http.request<unknown>(
+      "GET",
+      "/org/principals/spend-limits",
+    );
+    return parseListResponse<PrincipalSpendLimitResponse>(data).items;
+  }
+
+  /** Create or update a principal's daily spend limit. */
+  async setSpendLimit(
+    principalId: string,
+    data: PrincipalSpendLimitRequest,
+  ): Promise<PrincipalSpendLimitResponse> {
+    return this.http.request<PrincipalSpendLimitResponse>(
+      "PUT",
+      `/org/principals/${encodeURIComponent(principalId)}/spend-limit`,
+      { body: data },
+    );
+  }
+
+  /** Remove a principal's daily spend limit. */
+  async deleteSpendLimit(principalId: string): Promise<void> {
+    await this.http.request<void>(
+      "DELETE",
+      `/org/principals/${encodeURIComponent(principalId)}/spend-limit`,
     );
   }
 }

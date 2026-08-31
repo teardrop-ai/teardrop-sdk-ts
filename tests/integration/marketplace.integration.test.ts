@@ -135,4 +135,41 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
       }
     },
   );
+
+  it("agents() returns the public agent directory without authentication", async () => {
+    const client = makeClient();
+    const result = await client.marketplace.agents({ limit: 5 });
+    expect(Array.isArray(result.agents)).toBe(true);
+    expect(
+      result.next_cursor === undefined ||
+        result.next_cursor === null ||
+        typeof result.next_cursor === "string",
+    ).toBe(true);
+  });
+
+  it("authors() returns the public author index without authentication", async () => {
+    const client = makeClient();
+    const result = await client.marketplace.authors({ limit: 5 });
+    expect(Array.isArray(result.authors)).toBe(true);
+    expect(
+      result.next_cursor === undefined ||
+        result.next_cursor === null ||
+        typeof result.next_cursor === "string",
+    ).toBe(true);
+  });
+
+  it("quote() returns an atomic-USDC quote for a catalog tool", async ({ skip }) => {
+    const client = makeClient();
+    const catalog = await client.marketplace.catalog({ limit: 1 });
+    const tool = catalog.tools[0];
+    if (!tool) {
+      skip("No marketplace tools are currently published");
+      return;
+    }
+    const quote = await client.marketplace.quote(tool.qualified_name);
+    expect(quote.qualified_name).toBe(tool.qualified_name);
+    expect(typeof quote.price_usdc).toBe("number");
+    expect(["override", "marketplace"]).toContain(quote.source);
+    expect(typeof quote.expires_at).toBe("string");
+  });
 });

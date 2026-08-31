@@ -723,3 +723,191 @@ describe("Marketplace subscription lifecycle workflow", () => {
     expect(http.request).toHaveBeenCalledTimes(3);
   });
 });
+
+// ── agent registration ────────────────────────────────────────────────────────
+
+describe("MarketplaceModule agent registration", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("gets the current registration", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      org_id: "org-1",
+      agent_url: "https://agents.acme.dev/",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    await mp.getAgentRegistration();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/agent-registration",
+    );
+  });
+
+  it("sets the registration with agent_url in body", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      org_id: "org-1",
+      agent_url: "https://agents.acme.dev/",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+    });
+    await mp.setAgentRegistration({ agent_url: "https://agents.acme.dev/" });
+    expect(http.request).toHaveBeenCalledWith(
+      "PUT",
+      "/marketplace/agent-registration",
+      { body: { agent_url: "https://agents.acme.dev/" } },
+    );
+  });
+
+  it("deletes the registration", async () => {
+    vi.mocked(http.request).mockResolvedValue(undefined);
+    await mp.deleteAgentRegistration();
+    expect(http.request).toHaveBeenCalledWith(
+      "DELETE",
+      "/marketplace/agent-registration",
+    );
+  });
+});
+
+// ── agent directory ───────────────────────────────────────────────────────────
+
+describe("MarketplaceModule.agents", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("calls GET /marketplace/agents with auth:false", async () => {
+    vi.mocked(http.request).mockResolvedValue({ agents: [], next_cursor: null });
+    await mp.agents();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/agents",
+      expect.objectContaining({ auth: false }),
+    );
+  });
+
+  it("returns agents array and next_cursor", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      agents: [
+        {
+          org_slug: "acme",
+          org_name: "Acme Corp",
+          agent_url: "https://agents.acme.dev/",
+          agent_card_url: "https://agents.acme.dev/.well-known/agent-card.json",
+          message_endpoint: "https://agents.acme.dev/message",
+          catalog_endpoint: "https://agents.acme.dev/catalog",
+          tool_count: 3,
+        },
+      ],
+      next_cursor: "page-2",
+    });
+    const result = await mp.agents();
+    expect(result.agents).toHaveLength(1);
+    expect(result.agents[0].org_slug).toBe("acme");
+    expect(result.next_cursor).toBe("page-2");
+  });
+
+  it("forwards q, sort, stale, limit, cursor query params", async () => {
+    vi.mocked(http.request).mockResolvedValue({ agents: [], next_cursor: null });
+    await mp.agents({
+      q: "search",
+      sort: "reputation",
+      stale: "active",
+      limit: 10,
+      cursor: "tok",
+    });
+    const [, , opts] = vi.mocked(http.request).mock.calls[0];
+    const params = (opts as { params: Record<string, unknown> }).params;
+    expect(params.q).toBe("search");
+    expect(params.sort).toBe("reputation");
+    expect(params.stale).toBe("active");
+    expect(params.limit).toBe(10);
+    expect(params.cursor).toBe("tok");
+  });
+});
+
+// ── author index ──────────────────────────────────────────────────────────────
+
+describe("MarketplaceModule.authors", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("calls GET /marketplace/authors with auth:false", async () => {
+    vi.mocked(http.request).mockResolvedValue({ authors: [], next_cursor: null });
+    await mp.authors();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/authors",
+      expect.objectContaining({ auth: false }),
+    );
+  });
+
+  it("returns authors array with tool_count and total_calls", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      authors: [
+        { org_slug: "acme", org_name: "Acme Corp", tool_count: 3, total_calls: 42 },
+      ],
+      next_cursor: null,
+    });
+    const result = await mp.authors();
+    expect(result.authors[0].total_calls).toBe(42);
+  });
+});
+
+// ── quote ─────────────────────────────────────────────────────────────────────
+
+describe("MarketplaceModule.quote", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("calls GET /marketplace/quote with tool param and auth:false", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      qualified_name: "acme/web_search",
+      price_usdc: 100,
+      source: "marketplace",
+      expires_at: "2026-01-01T00:00:00Z",
+      currency: "USDC",
+    });
+    await mp.quote("acme/web_search");
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/quote",
+      {
+        params: { tool: "acme/web_search" },
+        auth: false,
+      },
+    );
+  });
+
+  it("returns the atomic-USDC quote with source", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      qualified_name: "acme/web_search",
+      price_usdc: 100,
+      source: "override",
+      expires_at: "2026-01-01T00:00:00Z",
+      currency: "USDC",
+    });
+    const result = await mp.quote("acme/web_search");
+    expect(result.price_usdc).toBe(100);
+    expect(result.source).toBe("override");
+  });
+});

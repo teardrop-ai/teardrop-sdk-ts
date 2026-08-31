@@ -502,3 +502,58 @@ describe("AuthModule — login then me workflow", () => {
     expect(me.org_id).toBe("org-uuid-1");
   });
 });
+
+describe("AuthModule.loginX402", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let auth: AuthModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    auth = new AuthModule(http);
+  });
+
+  it("calls POST /token with grant_type=x402 and X-Payment header, auth:false", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      access_token: "header.payload.sig",
+      token_type: "bearer",
+      expires_in: 1800,
+      org_id: "org-uuid-1",
+      client_id: "client-1",
+      client_secret: "one-time-secret",
+    });
+    await auth.loginX402("signed-payment-header");
+    expect(http.request).toHaveBeenCalledWith("POST", "/token", {
+      body: { grant_type: "x402" },
+      headers: { "X-Payment": "signed-payment-header" },
+      auth: false,
+    });
+  });
+
+  it("stores the access token and returns the one-time client credential", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      access_token: "header.payload.sig",
+      token_type: "bearer",
+      expires_in: 1800,
+      org_id: "org-uuid-1",
+      client_id: "client-1",
+      client_secret: "one-time-secret",
+    });
+    const result = await auth.loginX402("signed-payment-header");
+    expect(http.setToken).toHaveBeenCalledWith("header.payload.sig");
+    expect(result.client_secret).toBe("one-time-secret");
+    expect(result.org_id).toBe("org-uuid-1");
+  });
+
+  it("handles a reused credential with no client_secret", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      access_token: "header.payload.sig",
+      token_type: "bearer",
+      expires_in: 1800,
+      org_id: "org-uuid-1",
+      client_id: "client-1",
+      client_secret: null,
+    });
+    const result = await auth.loginX402("signed-payment-header");
+    expect(result.client_secret).toBeNull();
+  });
+});

@@ -38,4 +38,17 @@ export class A2AModule {
       params: { limit: params?.limit },
     });
   }
+
+  /**
+   * Poll the status and terminal result of an asynchronous inbound task.
+   * The `:` in the path is handled by the transport's URL builder.
+   */
+  async messageStatus<T = Record<string, unknown>>(
+    taskId: string,
+  ): Promise<T> {
+    return this.http.request<T>(
+      "GET",
+      `/message:status/${encodeURIComponent(taskId)}`,
+    );
+  }
 }
