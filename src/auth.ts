@@ -9,6 +9,7 @@ import type {
   ResendVerificationResponse,
   CreateInviteRequest,
   CreateInviteResponse,
+  X402BootstrapResponse,
 } from "./types";
 
 export class AuthModule {
@@ -25,6 +26,29 @@ export class AuthModule {
       body: params,
       auth: false,
     });
+    if (data.access_token) {
+      this.http.setToken(data.access_token);
+    }
+    return data;
+  }
+
+  /**
+   * Payment-first org bootstrap via `grant_type=x402`.
+   *
+   * Pass the signed x402 payment header (from the `X-PAYMENT-REQUIRED`
+   * challenge) to create the org and receive a JWT plus a one-time
+   * client credential (`client_secret` is only present on first bootstrap).
+   */
+  async loginX402(paymentHeader: string): Promise<X402BootstrapResponse> {
+    const data = await this.http.request<X402BootstrapResponse>(
+      "POST",
+      "/token",
+      {
+        body: { grant_type: "x402" },
+        headers: { "X-Payment": paymentHeader },
+        auth: false,
+      },
+    );
     if (data.access_token) {
       this.http.setToken(data.access_token);
     }

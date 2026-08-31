@@ -80,6 +80,27 @@ const summary = await client.usage.me({
 // → { total_runs, total_tokens_in, total_tokens_out, total_tool_calls, total_duration_ms }
 ```
 
+## Principal Spend Limits
+
+Per-principal daily spend limits cap how much a principal (user or credential)
+can spend per day:
+
+```typescript
+// List all principal spend limits
+const limits = await client.billing.spendLimits();
+// → PrincipalSpendLimitResponse[]
+
+// Create or update a principal's daily limit (atomic USDC)
+const limit = await client.billing.setSpendLimit("principal-id", {
+  daily_limit_usdc: 5_000_000,   // $5.00
+  is_paused: false,
+});
+// → { principal_id, daily_limit_usdc, is_paused, created_at, updated_at }
+
+// Remove the limit
+await client.billing.deleteSpendLimit("principal-id");
+```
+
 ---
 
 **See also:** [Marketplace](marketplace.md) for author earnings/withdrawals (a separate

@@ -1,6 +1,10 @@
 import type { HttpTransport } from "./transport";
 import type {
+  MarketplaceAgentDirectoryResponse,
+  MarketplaceAgentRegistrationRequest,
+  MarketplaceAgentRegistrationResponse,
   MarketplaceAuthorConfigResponse,
+  MarketplaceAuthorIndexResponse,
   MarketplaceAuthorProfileResponse,
   MarketplaceBalanceResponse,
   MarketplaceCatalogResponse,
@@ -11,6 +15,7 @@ import type {
   MarketplaceImportPreviewResponse,
   MarketplaceImportPublishRequest,
   MarketplaceImportPublishResponse,
+  MarketplaceQuoteResponse,
   RunFeedbackRequest,
   RunFeedbackResponse,
   MarketplaceSubscriptionListResponse,
@@ -219,6 +224,86 @@ export class MarketplaceModule {
     return this.http.request<UnsubscribeResponse>(
       "DELETE",
       `/marketplace/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    );
+  }
+
+  /** Get the org's marketplace agent registration (publishes your A2A endpoint). */
+  async getAgentRegistration(): Promise<MarketplaceAgentRegistrationResponse> {
+    return this.http.request<MarketplaceAgentRegistrationResponse>(
+      "GET",
+      "/marketplace/agent-registration",
+    );
+  }
+
+  /** Register (or update) the org's A2A agent endpoint for marketplace discovery. */
+  async setAgentRegistration(
+    data: MarketplaceAgentRegistrationRequest,
+  ): Promise<MarketplaceAgentRegistrationResponse> {
+    return this.http.request<MarketplaceAgentRegistrationResponse>(
+      "PUT",
+      "/marketplace/agent-registration",
+      { body: data },
+    );
+  }
+
+  /** Unpublish the org's A2A agent from the marketplace. */
+  async deleteAgentRegistration(): Promise<void> {
+    await this.http.request<void>("DELETE", "/marketplace/agent-registration");
+  }
+
+  /**
+   * Browse the public agent directory (no auth required).
+   * Cursor-paginated; `sort` is `name` | `reputation`, `stale` is `all` | `active` | `stale`.
+   */
+  async agents(params?: {
+    q?: string | null;
+    sort?: "name" | "reputation";
+    stale?: "all" | "active" | "stale";
+    limit?: number;
+    cursor?: string | null;
+  }): Promise<MarketplaceAgentDirectoryResponse> {
+    return this.http.request<MarketplaceAgentDirectoryResponse>(
+      "GET",
+      "/marketplace/agents",
+      {
+        params: {
+          q: params?.q ?? undefined,
+          sort: params?.sort,
+          stale: params?.stale,
+          limit: params?.limit,
+          cursor: params?.cursor ?? undefined,
+        },
+        auth: false,
+      },
+    );
+  }
+
+  /** Browse the public author index (no auth required). */
+  async authors(params?: {
+    q?: string | null;
+    limit?: number;
+    cursor?: string | null;
+  }): Promise<MarketplaceAuthorIndexResponse> {
+    return this.http.request<MarketplaceAuthorIndexResponse>(
+      "GET",
+      "/marketplace/authors",
+      {
+        params: {
+          q: params?.q ?? undefined,
+          limit: params?.limit,
+          cursor: params?.cursor ?? undefined,
+        },
+        auth: false,
+      },
+    );
+  }
+
+  /** Fetch an atomic-USDC price quote for a marketplace tool (no auth required). */
+  async quote(qualifiedToolName: string): Promise<MarketplaceQuoteResponse> {
+    return this.http.request<MarketplaceQuoteResponse>(
+      "GET",
+      "/marketplace/quote",
+      { params: { tool: qualifiedToolName }, auth: false },
     );
   }
 }

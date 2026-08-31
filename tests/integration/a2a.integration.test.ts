@@ -107,3 +107,17 @@ describe.skipIf(!testUrl || !allowA2AMutation || !testAgentUrl)(
     );
   },
 );
+
+describe.skipIf(!testUrl)("Integration — A2AModule messageStatus", () => {
+  it("messageStatus() returns a status object or not-found for an unknown task", async () => {
+    const client = await makeAuthedClient();
+    try {
+      const result = await client.a2a.messageStatus("integration-test-task");
+      expect(result).toBeDefined();
+      expect(typeof result).toBe("object");
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      expect([404, 422]).toContain(status);
+    }
+  });
+});

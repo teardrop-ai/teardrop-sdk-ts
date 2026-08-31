@@ -59,6 +59,63 @@ for (const tool of reputation.tools) {
 }
 ```
 
+## Agent Directory (Public)
+
+Registered A2A agents are discoverable through a public, cursor-paginated
+directory — no auth required:
+
+```typescript
+// Browse the agent directory
+const directory = await client.marketplace.agents({ limit: 20 });
+for (const agent of directory.agents) {
+  console.log(agent.org_slug, agent.agent_url, agent.tool_count);
+}
+
+// Search, sort, and filter staleness
+const filtered = await client.marketplace.agents({
+  q: "search",
+  sort: "reputation",        // "name" | "reputation"
+  stale: "active",           // "all" | "active" | "stale"
+  cursor: directory.next_cursor,
+});
+
+// Browse the author index
+const authors = await client.marketplace.authors({ limit: 20 });
+for (const author of authors.authors) {
+  console.log(author.org_slug, author.org_name, author.tool_count);
+}
+```
+
+## Publishing an Agent (Registration)
+
+Register your org's A2A agent endpoint to appear in the public directory:
+
+```typescript
+// Publish (or update) your A2A endpoint
+const reg = await client.marketplace.setAgentRegistration({
+  agent_url: "https://agents.acme.dev/",
+});
+// → { org_id, agent_url, created_at, updated_at }
+
+// Inspect the current registration
+const current = await client.marketplace.getAgentRegistration();
+
+// Unpublish
+await client.marketplace.deleteAgentRegistration();
+```
+
+## Price Quotes (Public)
+
+Fetch an atomic-USDC price quote for a marketplace tool before calling it
+(no auth required). `source` is `override` (author-set price) or `marketplace`
+(platform price); `expires_at` is advisory and matches the pricing-cache TTL:
+
+```typescript
+const quote = await client.marketplace.quote("acme/web_search");
+// → { qualified_name, price_usdc, source, expires_at, currency: "USDC" }
+console.log(`Price: ${quote.price_usdc} atomic USDC (${quote.source})`);
+```
+
 ## Subscriptions & Integration
 
 ```typescript
