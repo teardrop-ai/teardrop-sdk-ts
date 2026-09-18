@@ -336,7 +336,8 @@ export interface CreateScheduledRunRequest {
   prompt: string;
   interval_seconds: number;
   callback_url?: string | null;
-  callback_format?: "json" | "text";
+  /** "x" requires the X broadcast feature to be enabled server-side. */
+  callback_format?: "json" | "text" | "x";
   first_run_at?: string | null;
 }
 
@@ -346,7 +347,8 @@ export interface UpdateScheduledRunRequest {
   interval_seconds?: number | null;
   enabled?: boolean | null;
   callback_url?: string | null;
-  callback_format?: "json" | "text" | null;
+  /** "x" requires the X broadcast feature to be enabled server-side. */
+  callback_format?: "json" | "text" | "x" | null;
 }
 
 export interface ScheduledRunItem {
@@ -359,7 +361,7 @@ export interface ScheduledRunItem {
   interval_seconds: number;
   enabled: boolean;
   callback_url: string | null;
-  callback_format?: "json" | "text";
+  callback_format?: "json" | "text" | "x";
   next_run_at: string;
   last_run_at: string | null;
   consecutive_failures: number;
@@ -1204,6 +1206,8 @@ export interface MarketplaceAgentSummary {
   unique_caller_count?: number | null;
   is_stale?: boolean | null;
   last_event_at?: string | null;
+  /** UTC timestamp when the organization first registered its A2A endpoint. */
+  registered_at?: string | null;
 }
 
 /** Cursor-paginated public agent directory. */
@@ -1234,6 +1238,19 @@ export interface MarketplaceQuoteResponse {
   /** ISO 8601 advisory expiry matching the active pricing-cache TTL. */
   expires_at: string;
   currency?: "USDC";
+}
+
+/** Deterministic default per-delegation charge quote (public endpoint). */
+export interface MarketplaceDelegationQuoteResponse {
+  currency?: "USDC";
+  /** Global per-delegation cost cap in atomic USDC. */
+  max_cost_usdc: number;
+  /** Platform fee on delegations in basis points. */
+  platform_fee_bps: number;
+  /** Cap plus platform fee, in atomic USDC. */
+  effective_max_charge_usdc: number;
+  /** ISO 8601 advisory expiry matching the active pricing-cache TTL. */
+  expires_at: string;
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

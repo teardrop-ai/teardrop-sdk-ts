@@ -911,3 +911,46 @@ describe("MarketplaceModule.quote", () => {
     expect(result.source).toBe("override");
   });
 });
+
+// ── delegationQuote ───────────────────────────────────────────────────────────
+
+describe("MarketplaceModule.delegationQuote", () => {
+  let http: ReturnType<typeof makeMockHttp>;
+  let mp: MarketplaceModule;
+
+  beforeEach(() => {
+    http = makeMockHttp();
+    mp = new MarketplaceModule(http);
+  });
+
+  it("calls GET /marketplace/delegation/quote with auth:false and no params", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      currency: "USDC",
+      max_cost_usdc: 1_000_000,
+      platform_fee_bps: 250,
+      effective_max_charge_usdc: 1_025_000,
+      expires_at: "2026-01-01T00:00:00Z",
+    });
+    await mp.delegationQuote();
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/marketplace/delegation/quote",
+      { auth: false },
+    );
+  });
+
+  it("returns the delegation charge quote fields", async () => {
+    vi.mocked(http.request).mockResolvedValue({
+      currency: "USDC",
+      max_cost_usdc: 1_000_000,
+      platform_fee_bps: 250,
+      effective_max_charge_usdc: 1_025_000,
+      expires_at: "2026-01-01T00:00:00Z",
+    });
+    const result = await mp.delegationQuote();
+    expect(result.max_cost_usdc).toBe(1_000_000);
+    expect(result.platform_fee_bps).toBe(250);
+    expect(result.effective_max_charge_usdc).toBe(1_025_000);
+    expect(result.expires_at).toBe("2026-01-01T00:00:00Z");
+  });
+});

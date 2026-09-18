@@ -29,6 +29,7 @@ All request/response types are exported from `teardrop-sdk`.
 | `MemoryEntry`, `StoreMemoryRequest` | `memory.*` |
 | `MarketplaceTool`, `MarketplaceSubscription`, `AuthorConfig`, `EarningsEntry`, `WithdrawRequest` | `marketplace.*` |
 | Marketplace author, catalog, earnings, import, and feedback types | `marketplace.*` |
+| `MarketplaceQuoteResponse`, `MarketplaceDelegationQuoteResponse` | `marketplace.quote()`, `marketplace.delegationQuote()` |
 | `AddTrustedAgentRequest`, `TrustedAgent` | `a2a.*` |
 | `AgentWallet` | `agentWallets.*` |
 | `OrgCredentialsEntry`, `OrgCredentialsResponse`, `RegenerateCredentialsResponse` | `credentials.*` |
