@@ -116,6 +116,22 @@ const quote = await client.marketplace.quote("acme/web_search");
 console.log(`Price: ${quote.price_usdc} atomic USDC (${quote.source})`);
 ```
 
+### Delegation Quote (Public)
+
+Quote the deterministic default per-delegation charge — the global cost cap
+plus the platform fee — before committing to a delegation (no auth required).
+`expires_at` is advisory and matches the pricing-cache TTL:
+
+```typescript
+const dq = await client.marketplace.delegationQuote();
+// → { currency: "USDC", max_cost_usdc, platform_fee_bps,
+//     effective_max_charge_usdc, expires_at }
+console.log(
+  `Max charge: ${dq.effective_max_charge_usdc} atomic USDC ` +
+    `(cap ${dq.max_cost_usdc} + fee ${dq.platform_fee_bps} bps)`,
+);
+```
+
 ## Subscriptions & Integration
 
 ```typescript

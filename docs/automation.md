@@ -28,6 +28,11 @@ const runHistory = await client.schedules.runs(schedule.id, {
 // → { items: ScheduledRunResult[], next_cursor }
 ```
 
+`callback_format` controls how run results are delivered to `callback_url`:
+`"json"` (default) or `"text"`. The `"x"` format (X broadcast sink) is only
+accepted when the X broadcast feature is enabled server-side; otherwise the
+server rejects the request.
+
 ## Event Triggers
 
 Register a public inbound trigger that maps JSON payload fields into a prompt

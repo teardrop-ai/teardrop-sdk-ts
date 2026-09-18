@@ -172,4 +172,16 @@ describe.skipIf(!testUrl)("Integration — MarketplaceModule", () => {
     expect(["override", "marketplace"]).toContain(quote.source);
     expect(typeof quote.expires_at).toBe("string");
   });
+
+  it("delegationQuote() returns the public per-delegation charge", async () => {
+    const client = makeClient();
+    const quote = await client.marketplace.delegationQuote();
+    expect(Number.isInteger(quote.max_cost_usdc)).toBe(true);
+    expect(Number.isInteger(quote.platform_fee_bps)).toBe(true);
+    expect(Number.isInteger(quote.effective_max_charge_usdc)).toBe(true);
+    expect(typeof quote.expires_at).toBe("string");
+    if (quote.currency !== undefined) {
+      expect(quote.currency).toBe("USDC");
+    }
+  });
 });

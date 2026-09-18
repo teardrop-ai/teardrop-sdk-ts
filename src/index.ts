@@ -199,6 +199,7 @@ export type {
   MarketplaceAuthorSummary,
   MarketplaceAuthorIndexResponse,
   MarketplaceQuoteResponse,
+  MarketplaceDelegationQuoteResponse,
   PossiblyDeliveredDelegationItem,
   ResolveA2ADelegationRequest,
   ResolveA2ADelegationResponse,

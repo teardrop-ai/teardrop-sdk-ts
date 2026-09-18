@@ -9,6 +9,7 @@ import type {
   MarketplaceBalanceResponse,
   MarketplaceCatalogResponse,
   MarketplaceCatalogDetailResponse,
+  MarketplaceDelegationQuoteResponse,
   MarketplaceEarningsByToolResponse,
   MarketplaceEarningsResponse,
   MarketplaceImportPreviewRequest,
@@ -304,6 +305,15 @@ export class MarketplaceModule {
       "GET",
       "/marketplace/quote",
       { params: { tool: qualifiedToolName }, auth: false },
+    );
+  }
+
+  /** Quote the deterministic default per-delegation charge (no auth required). */
+  async delegationQuote(): Promise<MarketplaceDelegationQuoteResponse> {
+    return this.http.request<MarketplaceDelegationQuoteResponse>(
+      "GET",
+      "/marketplace/delegation/quote",
+      { auth: false },
     );
   }
 }
