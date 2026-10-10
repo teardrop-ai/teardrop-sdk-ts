@@ -3,6 +3,7 @@ import type {
   AdminA2AAgentDeletedResponse,
   AdminA2AAgentListItem,
   AdminA2AAgentResponse,
+  ChargeReconciliationResponse,
   AdminCreateA2AAgentRequest,
   AdminMemoryListResponse,
   AdminMemoryPurgeResponse,
@@ -213,6 +214,22 @@ export class AdminModule {
       "GET",
       "/admin/billing/revenue",
       { params: { start: params?.start, end: params?.end } },
+    );
+  }
+
+  async getChargeReconciliation(params?: {
+    start?: string | null;
+    end?: string | null;
+  }): Promise<ChargeReconciliationResponse> {
+    return this.http.request<ChargeReconciliationResponse>(
+      "GET",
+      "/admin/billing/charges/reconciliation",
+      {
+        params: {
+          start: params?.start ?? undefined,
+          end: params?.end ?? undefined,
+        },
+      },
     );
   }
 

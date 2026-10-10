@@ -17,8 +17,9 @@ All request/response types are exported from `teardrop-sdk`.
 | `CreditHistoryEntry`, `CreditHistoryResponse` | `billing.creditHistory()` (paginated) |
 | `StripeTopupRequest`, `StripeTopupResponse`, `StripeTopupStatusResponse` | `billing.topupStripe()`, `billing.topupStripeStatus()` |
 | `UsdcTopupRequirements`, `UsdcTopupRequest` | `billing.topupUsdcRequirements()`, `billing.topupUsdc()` |
+| `ChargeReconciliationResponse`, `ReconciliationCheckResponse` | `client.admin.getChargeReconciliation()` |
 | `UsageSummary` | `usage.me()` |
-| `OrgLlmConfig`, `SetLlmConfigRequest`, `ProviderType`, `RoutingPreference` | `llm.*` |
+| `OrgLlmConfig`, `SetLlmConfigRequest` / `UpsertLlmConfigRequest`, `ProviderType`, `RoutingPreference` | `llm.*` |
 | `ModelBenchmarksResponse`, `ModelInfo`, `ModelPricing`, `ModelRunBenchmarks` | `models.benchmarks()`, `models.orgBenchmarks()` |
 | `Wallet`, `LinkWalletRequest` | `wallets.list()`, `wallets.link()` |
 | `AgentCard` | `getAgentCard()`, `TeardropClient.fromAgentCard()` |
@@ -28,14 +29,16 @@ All request/response types are exported from `teardrop-sdk`.
 | `OrgMcpServer`, `CreateMcpServerRequest`, `UpdateMcpServerRequest`, `DiscoverMcpToolsResponse`, `McpToolDefinition`, `TestMcpToolRequest`, `TestMcpToolResponse` | `mcp.*` |
 | `MemoryEntry`, `StoreMemoryRequest` | `memory.*` |
 | `MarketplaceTool`, `MarketplaceSubscription`, `AuthorConfig`, `EarningsEntry`, `WithdrawRequest` | `marketplace.*` |
-| Marketplace author, catalog, earnings, import, and feedback types | `marketplace.*` |
+| Marketplace author, catalog, earnings, import, feedback, and registration types, including `MarketplaceAgentRegistrationCheck`, `MarketplaceAgentRegistrationPreviewResponse`, `MarketplaceAgentRegistrationTestResponse` | `marketplace.*` |
 | `MarketplaceQuoteResponse`, `MarketplaceDelegationQuoteResponse` | `marketplace.quote()`, `marketplace.delegationQuote()` |
 | `AddTrustedAgentRequest`, `TrustedAgent` | `a2a.*` |
 | `AgentWallet` | `agentWallets.*` |
-| `OrgCredentialsEntry`, `OrgCredentialsResponse`, `RegenerateCredentialsResponse` | `credentials.*` |
+| `OrgCredentialItem` / `OrgCredentialsEntry`, `OrgCredentialRegenerateResponse` / `RegenerateCredentialsResponse`, `OrgCredentialsResponse`, `OrgCredentialDisableResponse` | `credentials.*` |
+| `PredictionSubmitRequest`, `PredictionSubmitResponse`, `PredictionProofAnchor`, `PredictionProofResponse` | `labeling.submitPrediction()`, `labeling.getPredictionProof()` |
+| `CalibrationBin`, `ScorecardItem`, `ScorecardTask`, `ScorecardTaskListResponse`, `LeaderboardResponse`, `ScorecardResponse` | `scorecards.*` |
 | `TokenManager`, `HttpTransport` | Advanced: direct token control |
 | `HealthResponse` | `client.health()` |
-| Admin request/response types, including `TelemetryCompletenessBySource`, `TelemetryCompletenessResponse` | `client.admin.*` (server-enforced admin role) |
+| Admin request/response types, including `DiscoveryFunnelResponse`, `DiscoveryStageDay`, `TelemetryCompletenessBySource`, `TelemetryCompletenessResponse` | `client.admin.*` (server-enforced admin role) |
 
 Import any type directly:
 

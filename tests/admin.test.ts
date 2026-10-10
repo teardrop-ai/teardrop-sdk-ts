@@ -110,12 +110,13 @@ describe("AdminModule", () => {
   });
 
   it("creates client credentials", async () => {
-    const body = { org_id: "org-1" };
+    const body = { org_id: "org-1", scope: "publish" as const };
     vi.mocked(http.request).mockResolvedValue({
       client_id: "client-1",
       client_secret: "secret-once",
       org_id: "org-1",
       created_at: "2026-01-01T00:00:00Z",
+      scope: "publish",
     });
     await admin.createClientCredentials(body);
     expect(http.request).toHaveBeenCalledWith(
@@ -184,6 +185,38 @@ describe("AdminModule", () => {
       "GET",
       "/admin/billing/revenue",
       { params: { start: "2026-01-01", end: "2026-01-31" } },
+    );
+  });
+
+  it("gets charge reconciliation with optional date filters", async () => {
+    const response = {
+      start: "2026-01-01T00:00:00Z",
+      end: "2026-01-31T23:59:59Z",
+      ok: true,
+      checks: [],
+      legacy_revenue_usdc: 100,
+      ledger_revenue_usdc: 100,
+      ledger_mcp_revenue_usdc: 25,
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(
+      admin.getChargeReconciliation({
+        start: response.start,
+        end: response.end,
+      }),
+    ).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/admin/billing/charges/reconciliation",
+      { params: { start: response.start, end: response.end } },
+    );
+
+    await admin.getChargeReconciliation({ start: null, end: null });
+    expect(http.request).toHaveBeenLastCalledWith(
+      "GET",
+      "/admin/billing/charges/reconciliation",
+      { params: { start: undefined, end: undefined } },
     );
   });
 

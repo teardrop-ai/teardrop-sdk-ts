@@ -17,6 +17,7 @@ import { ModelsModule } from "./models";
 import { A2AModule } from "./a2a";
 import { AdminModule } from "./admin";
 import { LabelingModule } from "./labeling";
+import { ScorecardsModule } from "./scorecards";
 import type { AgentCard, HealthResponse } from "./types";
 
 export interface TeardropClientOptions {
@@ -75,6 +76,7 @@ export class TeardropClient {
   readonly a2a: A2AModule;
   readonly admin: AdminModule;
   readonly labeling: LabelingModule;
+  readonly scorecards: ScorecardsModule;
 
   constructor(opts: TeardropClientOptions) {
     this.http = new HttpTransport({
@@ -105,6 +107,7 @@ export class TeardropClient {
     this.a2a = new A2AModule(this.http);
     this.admin = new AdminModule(this.http);
     this.labeling = new LabelingModule(this.http);
+    this.scorecards = new ScorecardsModule(this.http);
   }
 
   /** Set the Bearer JWT token for authenticated requests. */

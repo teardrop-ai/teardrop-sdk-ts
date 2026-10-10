@@ -64,6 +64,8 @@ const delegations = await client.a2a.delegations({ limit: 20 });
 // delivery_resolved_at, delivery_settlement_tx.
 ```
 
+Agent list and mutation responses may include an optional `source` string.
+
 Trusted-agent mutations require an org-admin JWT with both `role=admin` and an
 `org_id` claim. Platform administrators should use
 `client.admin.addA2AAgent({ org_id, agent_url, ... })` instead of the

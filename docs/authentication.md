@@ -110,12 +110,32 @@ Manage machine-to-machine API credentials for your organization.
 ```typescript
 // List existing credentials
 const creds = await client.credentials.list();
-// → OrgCredentialsEntry[]
+// → [{ client_id, created_at, disabled_at, scope }, ...]
 
-// Rotate credentials (returns new client_id + client_secret)
-const newCreds = await client.credentials.regenerate();
-// → { client_id, client_secret }
+// Disable a credential
+const disabled = await client.credentials.disable(creds[0].client_id);
+// → { client_id, disabled_at }
+
+// Rotate credentials and optionally set the new credential's scope
+const newCreds = await client.credentials.regenerate("publish");
+// → { client_id, client_secret, scope }
 // Store client_secret securely — it is not stored server-side
+```
+
+`scope` is the credential's granted scope. A credential's `disabled_at` is
+`null` while it is active.
+
+`regenerate(scope?)` accepts `"read"`, `"publish"`, or `"withdraw"`. Omit the
+argument to preserve the no-scope-query behavior.
+
+Platform administrators creating credentials for an organization may request a
+scope explicitly:
+
+```typescript
+const credential = await client.admin.createClientCredentials({
+  org_id: "org-id",
+  scope: "publish", // "read" | "publish" | "withdraw"
+});
 ```
 
 Rotation invalidates all previous organization credentials and cannot be
