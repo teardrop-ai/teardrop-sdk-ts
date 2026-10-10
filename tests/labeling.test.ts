@@ -6,6 +6,9 @@ import type {
   LabelingDefinitionItem,
   LabelingPredictionItem,
   LabelingResultItem,
+  PredictionProofResponse,
+  PredictionSubmitRequest,
+  PredictionSubmitResponse,
   ScoreResult,
 } from "../src/types";
 
@@ -84,6 +87,51 @@ describe("LabelingModule", () => {
     expect(http.request).toHaveBeenCalledWith("GET", "/labeling/predictions", {
       params: { limit: 25 },
     });
+  });
+
+  it("gets a prediction proof and encodes the prediction id", async () => {
+    const response: PredictionProofResponse = {
+      prediction_id: "pred/1",
+      hash_algorithm: "sha256",
+      leaf_sha256: "leaf-hash",
+      salt: "salt-value",
+      status: "anchored",
+      leaf_version: 1,
+      leaf_preimage: { prediction_id: "pred/1" },
+      anchor: null,
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(module.getPredictionProof("pred/1")).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/labeling/predictions/pred%2F1/proof",
+    );
+  });
+
+  it("submits a signed prediction", async () => {
+    const request: PredictionSubmitRequest = {
+      definition_key: "toxicity",
+      definition_version: 1,
+      predictions: { label: "spam" },
+      idempotency_key: "request-1",
+      signer_address: "0xabc",
+      signature: "0xsig",
+    };
+    const response: PredictionSubmitResponse = {
+      created: true,
+      id: "pred-2",
+      payload_sha256: "payload-hash",
+      status: "submitted",
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(module.submitPrediction(request)).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/labeling/predictions",
+      { body: request },
+    );
   });
 
   it("lists labeling results with optional limit", async () => {

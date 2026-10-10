@@ -1,8 +1,10 @@
 import type { HttpTransport } from "./transport";
 import type {
   MarketplaceAgentDirectoryResponse,
+  MarketplaceAgentRegistrationPreviewResponse,
   MarketplaceAgentRegistrationRequest,
   MarketplaceAgentRegistrationResponse,
+  MarketplaceAgentRegistrationTestResponse,
   MarketplaceAuthorConfigResponse,
   MarketplaceAuthorIndexResponse,
   MarketplaceAuthorProfileResponse,
@@ -243,6 +245,28 @@ export class MarketplaceModule {
     return this.http.request<MarketplaceAgentRegistrationResponse>(
       "PUT",
       "/marketplace/agent-registration",
+      { body: data },
+    );
+  }
+
+  /** Validate whether the supplied endpoint can be registered. */
+  async previewAgentRegistration(
+    data: MarketplaceAgentRegistrationRequest,
+  ): Promise<MarketplaceAgentRegistrationPreviewResponse> {
+    return this.http.request<MarketplaceAgentRegistrationPreviewResponse>(
+      "POST",
+      "/marketplace/agent-registration/preview",
+      { body: data },
+    );
+  }
+
+  /** Probe the supplied endpoint and report its registration checks. */
+  async testAgentRegistration(
+    data: MarketplaceAgentRegistrationRequest,
+  ): Promise<MarketplaceAgentRegistrationTestResponse> {
+    return this.http.request<MarketplaceAgentRegistrationTestResponse>(
+      "POST",
+      "/marketplace/agent-registration/test",
       { body: data },
     );
   }

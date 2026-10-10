@@ -43,6 +43,28 @@ const credits = await client.billing.creditHistory({ operation: "topup" });
 // → { items: [{ id, amount_usdc, operation, balance_usdc_after, reason, created_at }, ...], next_cursor }
 ```
 
+## Admin Charge Reconciliation
+
+Platform administrators can compare legacy and ledger revenue for an optional
+ISO date-time range:
+
+```typescript
+const reconciliation = await client.admin.getChargeReconciliation({
+  start: "2026-06-01T00:00:00Z",
+  end: "2026-07-01T00:00:00Z",
+});
+
+if (!reconciliation.ok) {
+  for (const check of reconciliation.checks) {
+    console.warn(check.name, check.discrepancies, check.sample_ids);
+  }
+}
+```
+
+The response includes reconciliation checks and the legacy, ledger, and MCP
+ledger revenue totals. `start` and `end` are optional and can be supplied
+independently.
+
 ## Stripe Top-up
 
 ```typescript

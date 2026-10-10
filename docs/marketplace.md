@@ -44,6 +44,8 @@ const detail = await client.marketplace.getCatalogDetail("acme", "web_search");
 console.log(author.org_name, author.tool_count, detail.tool.qualified_name);
 ```
 
+When present, `output_schema` is the tool's declared output JSON Schema.
+
 ## Public Reputation (Public)
 
 Aggregate quality metrics for active marketplace tools, served from
@@ -91,6 +93,22 @@ for (const author of authors.authors) {
 Register your org's A2A agent endpoint to appear in the public directory:
 
 ```typescript
+// Check whether the endpoint can be registered before publishing it.
+const preview = await client.marketplace.previewAgentRegistration({
+  agent_url: "https://agents.acme.dev/",
+});
+if (!preview.registrable) {
+  console.warn(preview.detail); // The error the registration PUT would return.
+}
+
+// Run the endpoint checks and inspect their results.
+const test = await client.marketplace.testAgentRegistration({
+  agent_url: "https://agents.acme.dev/",
+});
+for (const check of test.checks) {
+  console.log(check.name, check.status, check.detail);
+}
+
 // Publish (or update) your A2A endpoint
 const reg = await client.marketplace.setAgentRegistration({
   agent_url: "https://agents.acme.dev/",

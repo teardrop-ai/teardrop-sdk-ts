@@ -22,6 +22,7 @@ export { ModelsModule } from "./models";
 export { A2AModule } from "./a2a";
 export { AdminModule } from "./admin";
 export { LabelingModule } from "./labeling";
+export { ScorecardsModule } from "./scorecards";
 
 // Transport (TokenManager exported for advanced use)
 export { TokenManager } from "./transport";
@@ -151,6 +152,7 @@ export type {
   AgentWalletResponse,
   AgentWalletDeactivatedResponse,
   OrgCredentialItem,
+  OrgCredentialDisableResponse,
   OrgCredentialRegenerateResponse,
   BillingBalanceResponse,
   BillingHistoryItem,
@@ -194,6 +196,9 @@ export type {
   UnsubscribeResponse,
   MarketplaceAgentRegistrationRequest,
   MarketplaceAgentRegistrationResponse,
+  MarketplaceAgentRegistrationCheck,
+  MarketplaceAgentRegistrationPreviewResponse,
+  MarketplaceAgentRegistrationTestResponse,
   MarketplaceAgentSummary,
   MarketplaceAgentDirectoryResponse,
   MarketplaceAuthorSummary,
@@ -209,6 +214,7 @@ export type {
   TokenRequest,
   LlmConfigDeletedResponse,
   LlmConfigResponse,
+  UpsertLlmConfigRequest,
   McpServerResponse,
   McpServerDeletedResponse,
   McpDiscoverResponse,
@@ -226,6 +232,16 @@ export type {
   LabelingResultItem,
   LabelingResultListResponse,
   ScoreResult,
+  PredictionProofAnchor,
+  PredictionProofResponse,
+  PredictionSubmitRequest,
+  PredictionSubmitResponse,
+  CalibrationBin,
+  LeaderboardResponse,
+  ScorecardItem,
+  ScorecardResponse,
+  ScorecardTask,
+  ScorecardTaskListResponse,
   EventTaskArtifactPart,
   EventTaskArtifact,
   EventTaskStatus,
@@ -258,6 +274,10 @@ export type {
   CreateUserResponse,
   CreateClientCredentialsRequest,
   CreateClientCredentialsResponse,
+  ChargeReconciliationResponse,
+  ReconciliationCheckResponse,
+  DiscoveryFunnelResponse,
+  DiscoveryStageDay,
   OrgSpendingConfigResponse,
   SpendingConfigUpdate,
   ToolPricingOverrideRequest,

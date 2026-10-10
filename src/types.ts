@@ -550,6 +550,46 @@ export interface LabelingPredictionListResponse {
   items: LabelingPredictionItem[];
 }
 
+export interface PredictionSubmitRequest {
+  definition_key: string;
+  definition_version: number;
+  predictions: Record<string, unknown>;
+  idempotency_key: string;
+  signer_address: string;
+  signature: string;
+}
+
+export interface PredictionSubmitResponse {
+  created: boolean;
+  id: string;
+  payload_sha256: string;
+  status: string;
+}
+
+export interface PredictionProofAnchor {
+  batch_id: string;
+  merkle_root: string;
+  leaf_index: number;
+  tree_size: number;
+  chain_id: number;
+  audit_path: string[];
+  anchor_address: string | null;
+  tx_hash: string | null;
+  anchored_at: string | null;
+  block_number: number | null;
+}
+
+export interface PredictionProofResponse {
+  prediction_id: string;
+  hash_algorithm: string;
+  leaf_sha256: string;
+  salt: string;
+  status: "pending" | "submitted" | "anchored";
+  leaf_version: number;
+  leaf_preimage: Record<string, unknown>;
+  anchor: PredictionProofAnchor | null;
+}
+
 export interface LabelingResultItem {
   id: string;
   target_id: string;
@@ -582,6 +622,62 @@ export interface ScoreResult {
     | "inconclusive"
     | "unavailable"
     | "invalid";
+}
+
+// ── Scorecards ────────────────────────────────────────────────────────────────
+
+export interface CalibrationBin {
+  bin: number;
+  count: number;
+  lower: number;
+  upper: number;
+  mean_probability: number;
+  observed_frequency: number;
+}
+
+export interface ScorecardItem {
+  subject: string;
+  platform_attested: boolean;
+  eligible: boolean;
+  n_scored: number;
+  rounds_submitted: number;
+  rounds_expected: number;
+  unresolved: number;
+  coverage: number | null;
+  mean_brier: number | null;
+  adjusted_brier: number | null;
+  accuracy: number | null;
+  calibration?: CalibrationBin[] | null;
+}
+
+export interface LeaderboardResponse {
+  definition_key: string;
+  definition_sha256: string;
+  definition_version: number;
+  window_days: number;
+  min_sample: number;
+  items: ScorecardItem[];
+}
+
+export interface ScorecardResponse {
+  definition_key: string;
+  definition_sha256: string;
+  definition_version: number;
+  window_days: number;
+  min_sample: number;
+  item: ScorecardItem;
+}
+
+export interface ScorecardTask {
+  definition_key: string;
+  definition_sha256: string;
+  definition_version: number;
+  prediction_schema: Record<string, unknown>;
+  config: Record<string, unknown>;
+}
+
+export interface ScorecardTaskListResponse {
+  items: ScorecardTask[];
 }
 
 // ── Org Webhook Tools ────────────────────────────────────────────────────────
@@ -962,6 +1058,8 @@ export interface MarketplaceToolSummary {
   description: string;
   short_description: string;
   input_schema: Record<string, unknown>;
+  /** Declared JSON Schema for the tool's output. */
+  output_schema?: Record<string, unknown> | null;
   cost_usdc: number;
   tool_type: string;
   category: string;
@@ -1190,6 +1288,26 @@ export interface MarketplaceAgentRegistrationResponse {
   updated_at: string;
 }
 
+export interface MarketplaceAgentRegistrationCheck {
+  name: string;
+  detail: string;
+  status: "pass" | "warn" | "fail";
+}
+
+export interface MarketplaceAgentRegistrationPreviewResponse {
+  registrable: boolean;
+  /** Error a registration PUT would return; null when registrable. */
+  detail?: string | null;
+  agent_url?: string | null;
+  price_per_task_usdc?: number | null;
+}
+
+export interface MarketplaceAgentRegistrationTestResponse {
+  passed: boolean;
+  checks: MarketplaceAgentRegistrationCheck[];
+  agent_url?: string | null;
+}
+
 /** Public summary of a registered marketplace agent. */
 export interface MarketplaceAgentSummary {
   org_slug: string;
@@ -1280,6 +1398,8 @@ export interface CreateUserResponse {
 
 export interface CreateClientCredentialsRequest {
   org_id: string;
+  /** Scope granted to the credential. */
+  scope?: "read" | "publish" | "withdraw";
 }
 
 export interface CreateClientCredentialsResponse {
@@ -1287,6 +1407,8 @@ export interface CreateClientCredentialsResponse {
   client_secret: string;
   org_id: string;
   created_at: string;
+  /** Scope granted to the credential. */
+  scope: string;
 }
 
 export interface OrgSpendingConfigResponse {
@@ -1391,6 +1513,54 @@ export interface SettlementRetryResponse {
 export interface RevenueSummaryResponse {
   total_settlements: number;
   total_revenue_usdc: number;
+}
+
+export interface DiscoveryStageDay {
+  date: string;
+  agent_card_hits?: number;
+  catalog_hits?: number;
+  mcp_402_challenges?: number;
+  mcp_402_no_payment?: number;
+  mcp_402_payment_invalid?: number;
+  mcp_server_card_hits?: number;
+  quote_hits?: number;
+  settled_calls?: number;
+  tools_list_hits?: number;
+  x402_discovery_hits?: number;
+}
+
+export interface DiscoveryFunnelResponse {
+  window_days: number;
+  agent_card_hits?: number;
+  catalog_hits?: number;
+  challenge_to_settle_rate?: number | null;
+  mcp_402_challenges?: number;
+  mcp_402_no_payment?: number;
+  mcp_402_payment_invalid?: number;
+  mcp_server_card_hits?: number;
+  quote_hits?: number;
+  series?: DiscoveryStageDay[];
+  settled_calls?: number;
+  tools_list_hits?: number;
+  x402_discovery_hits?: number;
+}
+
+export interface ReconciliationCheckResponse {
+  name: string;
+  source_rows: number;
+  discrepancies: Record<string, number>;
+  info: Record<string, number>;
+  sample_ids: string[];
+}
+
+export interface ChargeReconciliationResponse {
+  start: string;
+  end: string;
+  ok: boolean;
+  checks: ReconciliationCheckResponse[];
+  legacy_revenue_usdc: number;
+  ledger_revenue_usdc: number;
+  ledger_mcp_revenue_usdc: number;
 }
 
 export interface AdminWithdrawalItem {
@@ -1565,11 +1735,15 @@ export interface LlmConfigResponse {
   is_byok: boolean | null;
   created_at: string | null;
   updated_at: string | null;
+  /** Per-model reasoning effort overrides, present when configured. */
+  model_reasoning_effort?: Record<string, string> | null;
+  /** Org-wide reasoning effort, present when configured. */
+  reasoning_effort?: string | null;
 }
 
 export type OrgLlmConfig = LlmConfigResponse;
 
-export interface SetLlmConfigRequest {
+export interface UpsertLlmConfigRequest {
   provider: ProviderType;
   model: string;
   /**
@@ -1583,7 +1757,11 @@ export interface SetLlmConfigRequest {
   temperature?: number;
   timeout_seconds?: number;
   routing_preference?: RoutingPreference;
+  model_reasoning_effort?: Record<string, string>;
+  reasoning_effort?: string | null;
 }
+
+export type SetLlmConfigRequest = UpsertLlmConfigRequest;
 
 // ── Model Benchmarks ─────────────────────────────────────────────────────────
 
@@ -1640,6 +1818,7 @@ export interface OrgA2AAgentResponse {
   max_cost_usdc: number;
   require_x402: boolean;
   jwt_forward: boolean;
+  source?: string;
 }
 
 export interface OrgA2AAgentListItem {
@@ -1650,6 +1829,7 @@ export interface OrgA2AAgentListItem {
   require_x402: boolean;
   jwt_forward: boolean;
   created_at: string | null;
+  source?: string;
 }
 
 export interface OrgA2AAgentDeletedResponse {
@@ -1732,12 +1912,23 @@ export interface TrustedAgent {
 export interface OrgCredentialItem {
   client_id: string;
   created_at: string;
+  /** Null when the credential is active. */
+  disabled_at?: string | null;
+  /** Scope granted to the credential. */
+  scope?: string;
 }
 
 export interface OrgCredentialRegenerateResponse {
   client_id: string;
   client_secret: string;
   created_at: string;
+  /** Scope granted to the credential. */
+  scope: string;
+}
+
+export interface OrgCredentialDisableResponse {
+  client_id: string;
+  disabled_at: string;
 }
 
 export type OrgCredentialsEntry = OrgCredentialItem;

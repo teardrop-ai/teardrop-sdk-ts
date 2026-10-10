@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TeardropClient } from "../src/client";
 import { LabelingModule } from "../src/labeling";
+import { ScorecardsModule } from "../src/scorecards";
 
 describe("TeardropClient.health", () => {
   afterEach(() => {
@@ -37,5 +38,13 @@ describe("TeardropClient.labeling", () => {
     const client = new TeardropClient({ baseUrl: "https://api.example.com" });
 
     expect(client.labeling).toBeInstanceOf(LabelingModule);
+  });
+});
+
+describe("TeardropClient.scorecards", () => {
+  it("wires the scorecards resource module", () => {
+    const client = new TeardropClient({ baseUrl: "https://api.example.com" });
+
+    expect(client.scorecards).toBeInstanceOf(ScorecardsModule);
   });
 });

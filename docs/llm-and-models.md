@@ -15,9 +15,14 @@ const config = await client.llm.get();
 // → {
 //     org_id, provider: "anthropic", model: "claude-haiku-4-5-20251001",
 //     has_api_key: false, api_base: null, max_tokens: 4096, temperature: 0.0,
-//     routing_preference: "default", is_byok: false, created_at, updated_at
+//     routing_preference: "default", is_byok: false, created_at, updated_at,
+//     model_reasoning_effort, reasoning_effort
 //   }
 ```
+
+When configured, `model_reasoning_effort` contains per-model overrides and
+`reasoning_effort` contains the org-wide reasoning effort. Both values can be
+set through `client.llm.set()`.
 
 ## Set LLM Config
 
@@ -31,6 +36,8 @@ await client.llm.set({
   max_tokens: 4096,                // 1 – 200,000
   temperature: 0.0,                // 0.0 – 2.0
   timeout_seconds: 120,
+  model_reasoning_effort: { "openai:gpt-5": "high" },
+  reasoning_effort: "medium",
 });
 ```
 

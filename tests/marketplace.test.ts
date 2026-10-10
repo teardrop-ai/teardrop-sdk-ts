@@ -7,6 +7,9 @@ import { NotFoundError } from "../src/errors";
 import { MarketplaceModule } from "../src/marketplace";
 import type { HttpTransport } from "../src/transport";
 import type {
+  MarketplaceAgentRegistrationPreviewResponse,
+  MarketplaceAgentRegistrationRequest,
+  MarketplaceAgentRegistrationTestResponse,
   MarketplaceToolSummary,
   MarketplaceSubscriptionResponse,
   MarketplaceAuthorConfigResponse,
@@ -761,6 +764,45 @@ describe("MarketplaceModule agent registration", () => {
       "PUT",
       "/marketplace/agent-registration",
       { body: { agent_url: "https://agents.acme.dev/" } },
+    );
+  });
+
+  it("previews an agent registration", async () => {
+    const request: MarketplaceAgentRegistrationRequest = {
+      agent_url: "https://agents.acme.dev/",
+    };
+    const response: MarketplaceAgentRegistrationPreviewResponse = {
+      registrable: false,
+      detail: "Agent card was not reachable",
+      agent_url: request.agent_url,
+      price_per_task_usdc: null,
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(mp.previewAgentRegistration(request)).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/marketplace/agent-registration/preview",
+      { body: request },
+    );
+  });
+
+  it("tests an agent registration", async () => {
+    const request: MarketplaceAgentRegistrationRequest = {
+      agent_url: "https://agents.acme.dev/",
+    };
+    const response: MarketplaceAgentRegistrationTestResponse = {
+      passed: true,
+      checks: [{ name: "agent_card", detail: "Available", status: "pass" }],
+      agent_url: request.agent_url,
+    };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(mp.testAgentRegistration(request)).resolves.toEqual(response);
+    expect(http.request).toHaveBeenCalledWith(
+      "POST",
+      "/marketplace/agent-registration/test",
+      { body: request },
     );
   });
 

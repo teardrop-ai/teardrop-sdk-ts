@@ -19,6 +19,34 @@ const predictions = await client.labeling.listPredictions({ limit: 25 });
 const results = await client.labeling.listResults({ limit: 50 });
 ```
 
+## Submit a signed prediction
+
+Submit an externally generated prediction for a scorecard definition. Supply an
+idempotency key and the signer's address and signature with the prediction:
+
+```typescript
+const submitted = await client.labeling.submitPrediction({
+  definition_key: "toxicity",
+  definition_version: 1,
+  predictions: { label: "spam" },
+  idempotency_key: "prediction-request-123",
+  signer_address: "0x...",
+  signature: "0x...",
+});
+// → { created, id, payload_sha256, status }
+```
+
+Retrieve the signed prediction's proof by its returned ID:
+
+```typescript
+const proof = await client.labeling.getPredictionProof(submitted.id);
+console.log(proof.status, proof.leaf_sha256, proof.anchor);
+```
+
+The proof includes its leaf preimage and, once available, the Merkle-tree and
+on-chain anchor details. `anchor` is `null` while the prediction is not yet
+anchored.
+
 ## Bind a schedule to a definition
 
 ```typescript
@@ -41,7 +69,8 @@ const override = await client.labeling.override("target-42", {
 });
 ```
 
-The SDK exposes the read-mostly labeling surface and keeps the internal prediction-capture tool private by design.
+The SDK supports reading labeling data and submitting externally signed
+predictions; the internal prediction-capture tool remains private by design.
 
 ---
 

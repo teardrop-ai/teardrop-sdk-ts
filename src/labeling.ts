@@ -5,6 +5,9 @@ import type {
   LabelingDefinitionItem,
   LabelingOverrideResponse,
   LabelingPredictionItem,
+  PredictionProofResponse,
+  PredictionSubmitRequest,
+  PredictionSubmitResponse,
   LabelingResultItem,
   ScoreResult,
 } from "./types";
@@ -29,6 +32,25 @@ export class LabelingModule {
       container: "items",
     });
     return parsed.items;
+  }
+
+  async getPredictionProof(
+    predictionId: string,
+  ): Promise<PredictionProofResponse> {
+    return this.http.request<PredictionProofResponse>(
+      "GET",
+      `/labeling/predictions/${encodeURIComponent(predictionId)}/proof`,
+    );
+  }
+
+  async submitPrediction(
+    data: PredictionSubmitRequest,
+  ): Promise<PredictionSubmitResponse> {
+    return this.http.request<PredictionSubmitResponse>(
+      "POST",
+      "/labeling/predictions",
+      { body: data },
+    );
   }
 
   async listResults(params?: { limit?: number }): Promise<LabelingResultItem[]> {
