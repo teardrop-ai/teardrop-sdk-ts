@@ -21,11 +21,14 @@ const schedule = await client.schedules.create({
 const schedules = await client.schedules.list();
 const updated = await client.schedules.update(schedule.id, { enabled: false });
 
-const runHistory = await client.schedules.runs(schedule.id, {
-  limit: 20,
-  cursor: "2026-06-28T12:00:25Z",
-});
+const runHistory = await client.schedules.runs(schedule.id, { limit: 20 });
 // → { items: ScheduledRunResult[], next_cursor }
+if (runHistory.next_cursor != null) {
+  const nextRunHistory = await client.schedules.runs(schedule.id, {
+    limit: 20,
+    cursor: runHistory.next_cursor,
+  });
+}
 ```
 
 `callback_format` controls how run results are delivered to `callback_url`:
@@ -63,11 +66,29 @@ const accepted = await client.eventTriggers.fire(
 // → { run_id, status: "accepted" | "duplicate", schedule_id, result_path }
 
 const results = await client.eventTriggers.runs(trigger.id, { limit: 20 });
+if (results.next_cursor != null) {
+  const nextResults = await client.eventTriggers.runs(trigger.id, {
+    limit: 20,
+    cursor: results.next_cursor,
+  });
+}
 const rotated = await client.eventTriggers.rotateSecret(trigger.id);
 ```
 
 `client.eventTriggers.fire()` uses the trigger secret header instead of JWT
 auth, matching the public webhook endpoint at `POST /agent/events/{trigger_token}`.
+Both `schedules.runs()` and `eventTriggers.runs()` accept the opaque
+`next_cursor` returned by the previous page; pass it through unchanged. ISO
+timestamp cursor values are also accepted for compatibility.
+Stop requesting pages when `next_cursor` is null or absent; omitting `cursor`
+starts at the first page.
+
+Create/update requests and trigger responses include optional nullable
+`next_trigger_id`. Use `update(id, { next_trigger_id: null })` to clear it;
+omit the field to leave it unchanged. Event-run history uses
+`EventRunResultItem`, which adds optional nullable `chain_id` and `hop_index`.
+Its `output_text` and `error` fields may also be absent or null, so check them
+before use. `getRun()` task metadata values can be strings or numbers.
 
 ---
 

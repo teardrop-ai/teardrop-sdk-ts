@@ -313,7 +313,7 @@ describe("AgentModule.run — stream events", () => {
     ]);
   });
 
-  it("USAGE_SUMMARY event contains cost_usdc and tokens_in fields", async () => {
+  it("USAGE_SUMMARY event includes usage and runner metadata fields", async () => {
     vi.mocked(http.stream).mockResolvedValue(
       makeSSEResponse([
         sseData(EVENT_USAGE_SUMMARY, {
@@ -322,9 +322,12 @@ describe("AgentModule.run — stream events", () => {
           tokens_out: 80,
           tool_calls: 0,
           duration_ms: 500,
-          cost_usdc: 0.0025,
-          platform_fee_usdc: 0.0002,
+          cost_usdc: 2_500,
+          platform_fee_usdc: 200,
           delegation_cost_usdc: 0,
+          model: "claude-haiku-4-5-20251001",
+          provider: "anthropic",
+          runner_version: "1.2.3",
         }),
         sseData(EVENT_DONE, { run_id: "r3" }),
       ]),
@@ -333,8 +336,12 @@ describe("AgentModule.run — stream events", () => {
     const usage = events.find((e) => e.event === EVENT_USAGE_SUMMARY);
     expect(usage).toBeDefined();
     if (usage?.event === EVENT_USAGE_SUMMARY) {
-      expect(usage.data.cost_usdc).toBe(0.0025);
+      expect(usage.data.cost_usdc).toBe(2_500);
+      expect(usage.data.platform_fee_usdc).toBe(200);
       expect(usage.data.tokens_in).toBe(200);
+      expect(usage.data.model).toBe("claude-haiku-4-5-20251001");
+      expect(usage.data.provider).toBe("anthropic");
+      expect(usage.data.runner_version).toBe("1.2.3");
     }
   });
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminModule } from "../src/admin";
 import type { HttpTransport } from "../src/transport";
+import type { TelemetryCompletenessResponse } from "../src/types";
 
 function makeMockHttp() {
   return {
@@ -289,7 +290,7 @@ describe("AdminModule", () => {
   });
 
   it("gets telemetry completeness with optional days filter", async () => {
-    const response = {
+    const response: TelemetryCompletenessResponse = {
       window_days: 7,
       sources: [
         {
@@ -301,6 +302,7 @@ describe("AdminModule", () => {
           outcome_label_coverage: 0.6,
           tool_event_coverage: 0.5,
         },
+        { source: "eval", total_runs: 2 },
       ],
     };
     vi.mocked(http.request).mockResolvedValue(response);

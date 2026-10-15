@@ -24,6 +24,9 @@ All request/response types are exported from `teardrop-sdk`.
 | `Wallet`, `LinkWalletRequest` | `wallets.list()`, `wallets.link()` |
 | `AgentCard` | `getAgentCard()`, `TeardropClient.fromAgentCard()` |
 | `RunOutcomeRequest`, `RunOutcomeResponse`, `RunOutcomeRating` | `agent.setOutcome()` |
+| `ScheduledRunResultItem`, `ScheduledRunResultsResponse` | `schedules.runs()` |
+| `EventRunResultItem`, `EventRunResultsResponse` | `eventTriggers.runs()` |
+| `TelemetryCompletenessBySource`, `TelemetryCompletenessResponse` | `admin.getTelemetryCompleteness()`; sources include `api`, `schedule`, `trigger`, `a2a`, and `eval` |
 | `OrgTool`, `CreateOrgToolRequest`, `UpdateOrgToolRequest` | `tools.*` |
 | `TestWebhookRequest`, `TestWebhookResponse` | `tools.testWebhook()` |
 | `OrgMcpServer`, `CreateMcpServerRequest`, `UpdateMcpServerRequest`, `DiscoverMcpToolsResponse`, `McpToolDefinition`, `TestMcpToolRequest`, `TestMcpToolResponse` | `mcp.*` |

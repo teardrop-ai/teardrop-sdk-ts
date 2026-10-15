@@ -140,6 +140,8 @@ export type {
   ScheduleDeletedResponse,
   ScheduledRunResultItem,
   ScheduledRunResultsResponse,
+  EventRunResultItem,
+  EventRunResultsResponse,
   EventTriggerItem,
   EventTriggerCreatedResponse,
   EventTriggerListResponse,

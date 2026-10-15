@@ -3,12 +3,12 @@ import { ValidationError } from "./errors";
 import type {
   CreateEventTriggerRequest,
   EventDispatchResponse,
+  EventRunResultItem,
+  EventRunResultsResponse,
   EventTaskResponse,
   EventTriggerItem,
   EventTriggerCreatedResponse,
   RotateEventTriggerSecretResponse,
-  ScheduledRunResultsResponse,
-  ScheduledRunResultItem,
   UpdateEventTriggerRequest,
   ScheduleDeletedResponse,
 } from "./types";
@@ -80,7 +80,7 @@ export class EventTriggersModule {
   async runs(
     id: string,
     params?: { limit?: number; cursor?: string },
-  ): Promise<ScheduledRunResultsResponse> {
+  ): Promise<EventRunResultsResponse> {
     const data = await this.http.request<unknown>(
       "GET",
       `/agent/event-triggers/${encodeURIComponent(id)}/runs`,
@@ -91,7 +91,7 @@ export class EventTriggersModule {
         },
       },
     );
-    const parsed = parseListResponse<ScheduledRunResultItem>(data, {
+    const parsed = parseListResponse<EventRunResultItem>(data, {
       container: "items",
     });
     return { items: parsed.items, next_cursor: parsed.nextCursor };

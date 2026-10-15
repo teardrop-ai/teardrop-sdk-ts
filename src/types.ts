@@ -128,7 +128,7 @@ export interface AgentTool {
   input_schema: Record<string, unknown>;
   /** Origin of the tool. */
   source: "platform" | "org" | "marketplace";
-  /** How the tool is made available to the agent. */
+  /** Inventory access mode; `subscribed` is the legacy label for an org marketplace pin. */
   access_mode: "included" | "subscribed";
 }
 
@@ -263,6 +263,9 @@ export interface UsageSummaryEvent {
     cost_usdc: number;
     platform_fee_usdc: number;
     delegation_cost_usdc: number;
+    model?: string;
+    provider?: string;
+    runner_version?: string;
     /** Cache read tokens consumed during the run. */
     cache_read_tokens?: number;
     /** Cache creation tokens consumed during the run. */
@@ -394,6 +397,25 @@ export interface ScheduledRunResultsResponse {
   next_cursor: string | null;
 }
 
+export interface EventRunResultItem {
+  id: string;
+  schedule_id: string;
+  org_id: string;
+  run_id: string;
+  status: string;
+  cost_usdc: number;
+  created_at: string;
+  chain_id?: string | null;
+  hop_index?: number | null;
+  output_text?: string | null;
+  error?: string | null;
+}
+
+export interface EventRunResultsResponse {
+  items: EventRunResultItem[];
+  next_cursor?: string | null;
+}
+
 export type ScheduledRun = ScheduledRunItem;
 export type ScheduledRunResult = ScheduledRunResultItem;
 
@@ -401,6 +423,7 @@ export interface CreateEventTriggerRequest {
   name: string;
   prompt: string;
   callback_url?: string | null;
+  next_trigger_id?: string | null;
 }
 
 export interface UpdateEventTriggerRequest {
@@ -408,6 +431,7 @@ export interface UpdateEventTriggerRequest {
   prompt?: string | null;
   enabled?: boolean | null;
   callback_url?: string | null;
+  next_trigger_id?: string | null;
 }
 
 export interface EventTriggerItem {
@@ -425,6 +449,7 @@ export interface EventTriggerItem {
   updated_at: string;
   trigger_token: string | null;
   event_path: string | null;
+  next_trigger_id?: string | null;
 }
 
 export interface EventTriggerCreatedResponse {
@@ -442,6 +467,7 @@ export interface EventTriggerCreatedResponse {
   updated_at: string;
   trigger_token: string | null;
   event_path: string | null;
+  next_trigger_id?: string | null;
   secret: string;
 }
 
@@ -489,7 +515,7 @@ export interface EventTaskResponse {
   contextId: string;
   status: EventTaskStatus;
   artifacts?: EventTaskArtifact[];
-  metadata?: Record<string, string>;
+  metadata?: Record<string, string | number>;
 }
 
 export interface ScheduleRunNowResponse {
@@ -1645,7 +1671,7 @@ export interface AdminMemoryPurgeResponse {
 }
 
 export interface TelemetryCompletenessBySource {
-  source: "api" | "schedule" | "trigger" | "a2a";
+  source: "api" | "schedule" | "trigger" | "a2a" | "eval";
   total_runs?: number;
   tool_eligible_runs?: number;
   usage_event_coverage?: number;
@@ -1701,6 +1727,7 @@ export interface MarketplaceSubscriptionResponse {
   subscribed_at: string;
 }
 
+/** Legacy name for a response describing an org-level marketplace tool pin. */
 export type MarketplaceSubscription = MarketplaceSubscriptionResponse;
 
 export interface MarketplaceSubscriptionListResponse {
