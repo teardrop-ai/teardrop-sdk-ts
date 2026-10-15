@@ -22,7 +22,8 @@ for await (const event of client.agent.run({
 
 ## Agent Tool Inventory
 
-List all tools available to your agent, including their source and access mode.
+Inspect the tool inventory reported by `/agent/tools`, including each tool's
+source and access mode.
 
 ```typescript
 const tools = await client.agent.tools();
@@ -31,11 +32,17 @@ for (const tool of tools) {
 }
 ```
 
-**Available Tools:** The agent automatically discovers and can call:
+The inventory may include:
 - Built-in Teardrop tools
-- Marketplace tools you're subscribed to (see [Marketplace](marketplace.md))
+- Marketplace tools pinned through the legacy subscription routes (see
+  [Marketplace](marketplace.md))
 - Custom webhook tools registered in your org (see [Tools & MCP Servers](tools-and-mcp.md))
 - MCP servers you've registered (see [Tools & MCP Servers](tools-and-mcp.md))
+
+This is an inventory, not a guarantee that a tool will be injected into or
+executed during a particular run, and it does not authorize payment. Billing
+is separate. A marketplace pin does not grant direct MCP access; direct
+`/tools/mcp` calls have their own authentication and billing requirements.
 
 ## x402 On-chain Payments
 
@@ -70,7 +77,7 @@ try {
 | `TOOL_CALL_END` | `tool_call_id`, `tool_name`, `output` | Tool returned |
 | `Custom` (`TOOL_OUTPUT`) | `name`, `value` | Structured tool output |
 | `SURFACE_UPDATE` | `surface_id`, `components` | UI surface payload |
-| `USAGE_SUMMARY` | `tokens_in`, `tokens_out`, `cost_usdc`, `cache_read_tokens`, `cache_creation_tokens` | Per-run usage & tokens |
+| `USAGE_SUMMARY` | `tokens_in`, `tokens_out`, `cost_usdc`; optional `model`, `provider`, `runner_version`, `cache_read_tokens`, `cache_creation_tokens` | Per-run usage and optional model/runner metadata |
 | `BILLING_SETTLEMENT` | `run_id`, `amount_usdc`, `tx_hash` | Credit deducted |
 | `ERROR` | `error` | Non-fatal error during run |
 | `DONE` | `run_id` | Stream complete |

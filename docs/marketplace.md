@@ -1,17 +1,19 @@
-# Marketplace — Discover, Subscribe, and Monetize Agent Tools
+# Marketplace — Discover, Pin, and Monetize Agent Tools
 
-**Public tool catalogue with browsing, subscriptions, and author publishing/earnings workflows.**
+**Public tool catalogue with browsing, organization-level pins (legacy
+subscription routes), and author publishing/earnings workflows.**
 
 **Module:** `client.marketplace`
 
-Discover, subscribe to, and monetize tools on the Teardrop marketplace. The
-marketplace is a curated catalogue of reusable agent tools built and published
-by the Teardrop community and core team.
+Discover and pin tools for your org's `/agent/run` tool set, and publish tools
+on the Teardrop marketplace. The marketplace is a curated catalogue of reusable
+agent tools built and published by the Teardrop community and core team.
 
 ## Three Core Workflows
 
 1. **Browsing** (public, no auth) — Discover tools in the marketplace catalogue
-2. **Subscriptions** (auth required) — Subscribe to and use marketplace tools in your agent runs
+2. **Pins** (auth required) — Pin marketplace tools for your org; the API
+   retains legacy subscription route names
 3. **Publishing & Earnings** (auth required) — Publish your own tools and track revenue
 
 ## Browsing Tools (Public)
@@ -150,30 +152,34 @@ console.log(
 );
 ```
 
-## Subscriptions & Integration
+## Pins & Legacy Subscription Routes
+
+The `subscribe()`, `subscriptions()`, and `unsubscribe()` method and route names
+are retained for compatibility. They manage org-level marketplace tool pins
+used by the `/agent/run` tool set; they are not recurring payments.
 
 ```typescript
-// Subscribe to a tool
-const sub = await client.marketplace.subscribe("acme/web_search");
-// Tool is now available to your agent during runs
+// Pin a tool for the org
+const pin = await client.marketplace.subscribe("acme/web_search");
 
-// List subscriptions
-const subs = await client.marketplace.subscriptions();
-// → { subscriptions: MarketplaceSubscriptionItem[] }
+// List org-level pins
+const pins = await client.marketplace.subscriptions();
+// → { subscriptions: MarketplaceSubscriptionItem[] } (legacy response shape)
 
-// Unsubscribe
-await client.marketplace.unsubscribe(sub.id);
+// Remove a pin
+await client.marketplace.unsubscribe(pin.id);
 ```
 
-Healthy community tools are subscribable. `platform/<tool>` entries are
-built-in tools and are not subscription targets; attempting to subscribe to a
-platform tool returns `400`. The integration test selects the first healthy
-community tool from the catalog at runtime and skips only when no such tool is
-published.
+Pins do not guarantee that a tool will be injected into or executed during a
+particular run, authorize payment, or grant direct MCP access. Direct
+`/tools/mcp` calls have their own authentication and billing requirements.
+Billing is separate from pinning.
 
-**Integration in Agent Runs:** After subscribing to a marketplace tool, the
-agent automatically discovers and can call it during `client.agent.run()`
-without any additional configuration.
+Healthy community tools can be pinned. `platform/<tool>` entries are built-in
+tools and are not pin targets; attempting to call the legacy `subscribe()`
+method for a platform tool returns `400`. The integration test selects the
+first healthy community tool from the catalog at runtime and skips only when no
+such tool is published.
 
 ## Publishing & Earnings
 
@@ -261,19 +267,20 @@ const result = await client.marketplace.withdraw({ amount_usdc: 1_000_000 });
 const { withdrawals, next_cursor } = await client.marketplace.withdrawals({ limit: 20 });
 ```
 
-## Using Marketplace Tools in Agent Runs
+## Using Pinned Marketplace Tools in Agent Runs
 
-Once subscribed to a marketplace tool, it becomes available to the agent and
-can be called during runs. The agent sees the tool schema and calls it
-transparently.
+Pinning adds a marketplace tool to the org's configured tool set, but runtime
+injection and execution are decided per run and are not guaranteed. The
+inventory from `client.agent.tools()` is not an execution guarantee or payment
+authorization; billing is separate.
 
 ```typescript
 import { parseMarketplaceToolName } from "teardrop-sdk";
 
-// 1. Subscribe to a tool
+// 1. Pin a tool using the legacy subscription method
 await client.marketplace.subscribe("acme/web_search");
 
-// 2. Use it in agent runs (no explicit config needed)
+// 2. Run the agent; it may call the pinned tool when selected at runtime
 for await (const event of client.agent.run("Find the latest ETH price")) {
   if (event.event === "TOOL_CALL_START") {
     console.log(`Agent called: ${event.data.tool_name}`);
@@ -297,7 +304,7 @@ const parsed = parseMarketplaceToolName("acme/web_search");
 import { PaymentRequiredError } from "teardrop-sdk";
 
 try {
-  for await (const event of client.agent.run("Query subscribed tool")) { ... }
+  for await (const event of client.agent.run("Query marketplace tool")) { ... }
 } catch (e) {
   if (e instanceof PaymentRequiredError) {
     // Insufficient balance for tool call — top up and retry
@@ -313,7 +320,7 @@ Teardrop offers three ways to extend agent capabilities:
 | | Marketplace | Custom Webhook Tools | MCP Servers |
 |---|---|---|---|
 | Scope | Shared across orgs; discoverable catalogue | Org-private webhooks | External protocol servers |
-| Discovery | Public browsing, subscriptions | Manual registration | Manual registration |
+| Discovery | Public browsing, org pins (legacy subscriptions) | Manual registration | Manual registration |
 | Monetization | Built-in revenue sharing | Base pricing only | Not supported |
 | Maintenance | Author owns; Teardrop supplies framework | You manage webhooks | You manage server |
 | Best for | Sharing tools, generating revenue | Internal integrations | Legacy systems, stdio tools |

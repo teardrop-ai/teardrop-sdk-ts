@@ -5,10 +5,12 @@ import type { HttpTransport } from "../src/transport";
 import type {
   CreateEventTriggerRequest,
   EventDispatchAccepted,
+  EventRunResultItem,
+  EventRunResultsResponse,
+  EventTaskResponse,
   EventTrigger,
   EventTriggerWithSecret,
   RotateEventTriggerSecretResponse,
-  ScheduledRunResult,
   UpdateEventTriggerRequest,
 } from "../src/types";
 
@@ -25,6 +27,9 @@ const TRIGGER: EventTrigger = {
   last_run_at: null,
   created_at: "2026-06-28T12:00:00Z",
   updated_at: "2026-06-28T12:00:00Z",
+  trigger_token: null,
+  event_path: null,
+  next_trigger_id: "evt-trigger-next",
 };
 
 const TRIGGER_WITH_SECRET: EventTriggerWithSecret = {
@@ -39,16 +44,23 @@ const ROTATED_SECRET: RotateEventTriggerSecretResponse = {
   secret: "new_secret",
 };
 
-const RESULT: ScheduledRunResult = {
+const RESULT: EventRunResultItem = {
   id: "result-123",
   schedule_id: "evt-trigger-123",
   org_id: "org-123",
   run_id: "run-123",
   status: "completed",
+  chain_id: "eip155:1",
+  hop_index: 1,
   output_text: "Payment accepted.",
   cost_usdc: 15_000,
-  error: "",
+  error: null,
   created_at: "2026-06-28T12:00:25Z",
+};
+
+const RESULTS: EventRunResultsResponse = {
+  items: [RESULT],
+  next_cursor: "opaque-cursor-2",
 };
 
 const ACCEPTED: EventDispatchAccepted = {
@@ -81,10 +93,12 @@ describe("EventTriggersModule.create", () => {
     const req: CreateEventTriggerRequest = {
       name: "On Payment Inbound",
       prompt: "Audit incoming payment of {{amount}}",
+      next_trigger_id: "evt-trigger-next",
     };
 
-    await module.create(req);
+    const result = await module.create(req);
 
+    expect(result.next_trigger_id).toBe("evt-trigger-next");
     expect(http.request).toHaveBeenCalledWith(
       "POST",
       "/agent/event-triggers",
@@ -157,11 +171,19 @@ describe("EventTriggersModule.update", () => {
   });
 
   it("calls PATCH /agent/event-triggers/:id with the request body", async () => {
-    vi.mocked(http.request).mockResolvedValue({ ...TRIGGER, enabled: false });
-    const req: UpdateEventTriggerRequest = { enabled: false };
+    vi.mocked(http.request).mockResolvedValue({
+      ...TRIGGER,
+      enabled: false,
+      next_trigger_id: null,
+    });
+    const req: UpdateEventTriggerRequest = {
+      enabled: false,
+      next_trigger_id: null,
+    };
 
-    await module.update("evt-trigger-123", req);
+    const result = await module.update("evt-trigger-123", req);
 
+    expect(result.next_trigger_id).toBeNull();
     expect(http.request).toHaveBeenCalledWith(
       "PATCH",
       "/agent/event-triggers/evt-trigger-123",
@@ -224,13 +246,14 @@ describe("EventTriggersModule.getRun", () => {
   });
 
   it("fetches a trigger run by schedule and run IDs", async () => {
-    const response = {
+    const response: EventTaskResponse = {
       id: "run-123",
       contextId: "ctx-123",
       status: {
         state: "TASK_STATE_COMPLETED",
         timestamp: "2026-08-17T12:00:00Z",
       },
+      metadata: { attempt: 2, source: "event-trigger" },
     };
     vi.mocked(http.request).mockResolvedValue(response);
 
@@ -254,15 +277,41 @@ describe("EventTriggersModule.runs", () => {
   });
 
   it("returns a paginated results page", async () => {
-    vi.mocked(http.request).mockResolvedValue({
-      items: [RESULT],
-      next_cursor: "2026-06-28T12:00:25Z",
-    });
+    vi.mocked(http.request).mockResolvedValue(RESULTS);
 
-    const result = await module.runs("evt-trigger-123", { limit: 10 });
+    const result: EventRunResultsResponse = await module.runs(
+      "evt-trigger-123",
+      { limit: 10, cursor: "opaque-cursor-1" },
+    );
 
     expect(result.items).toEqual([RESULT]);
-    expect(result.next_cursor).toBe("2026-06-28T12:00:25Z");
+    expect(result.items[0]?.chain_id).toBe("eip155:1");
+    expect(result.items[0]?.hop_index).toBe(1);
+    expect(result.next_cursor).toBe("opaque-cursor-2");
+    expect(http.request).toHaveBeenCalledWith(
+      "GET",
+      "/agent/event-triggers/evt-trigger-123/runs",
+      { params: { limit: 10, cursor: "opaque-cursor-1" } },
+    );
+  });
+
+  it("accepts omitted optional result fields and normalizes a missing cursor", async () => {
+    const item: EventRunResultItem = {
+      id: "result-124",
+      schedule_id: "evt-trigger-123",
+      org_id: "org-123",
+      run_id: "run-124",
+      status: "completed",
+      cost_usdc: 15_000,
+      created_at: "2026-06-28T12:00:25Z",
+    };
+    const response: EventRunResultsResponse = { items: [item] };
+    vi.mocked(http.request).mockResolvedValue(response);
+
+    await expect(module.runs("evt-trigger-123")).resolves.toEqual({
+      items: [item],
+      next_cursor: null,
+    });
   });
 });
 

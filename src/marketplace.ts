@@ -203,7 +203,7 @@ export class MarketplaceModule {
     );
   }
 
-  /** Subscribe to a marketplace tool by qualified name (org_slug/tool_name). */
+  /** Pin a marketplace tool using the legacy subscription route name. */
   async subscribe(
     qualifiedToolName: string,
   ): Promise<MarketplaceSubscriptionResponse> {
@@ -214,7 +214,7 @@ export class MarketplaceModule {
     );
   }
 
-  /** List active subscriptions. */
+  /** List org-level pins through the legacy subscriptions API route. */
   async subscriptions(): Promise<MarketplaceSubscriptionListResponse> {
     return this.http.request<MarketplaceSubscriptionListResponse>(
       "GET",
@@ -222,7 +222,7 @@ export class MarketplaceModule {
     );
   }
 
-  /** Unsubscribe from a marketplace tool. */
+  /** Remove an org-level pin through the legacy unsubscribe API route. */
   async unsubscribe(subscriptionId: string): Promise<UnsubscribeResponse> {
     return this.http.request<UnsubscribeResponse>(
       "DELETE",

@@ -14,8 +14,8 @@ persists across runs.
 const config = await client.llm.get();
 // → {
 //     org_id, provider: "anthropic", model: "claude-haiku-4-5-20251001",
-//     has_api_key: false, api_base: null, max_tokens: 4096, temperature: 0.0,
-//     routing_preference: "default", is_byok: false, created_at, updated_at,
+//     has_api_key: true, api_base: null, max_tokens: 4096, temperature: 0.0,
+//     routing_preference: "default", is_byok: true, created_at, updated_at,
 //     model_reasoning_effort, reasoning_effort
 //   }
 ```
@@ -31,7 +31,7 @@ await client.llm.set({
   provider: "anthropic",           // "anthropic" | "openai" | "google" | "openrouter"
   model: "claude-sonnet-4-20250514",
   routing_preference: "cost",      // "default" | "cost" | "speed" | "quality"
-  api_key: "sk-...",               // optional BYOK key (TLS-only, never logged)
+  api_key: "sk-...",               // BYOK key (TLS-only, never logged); required for Anthropic
   api_base: null,                  // optional self-hosted endpoint (vLLM / Ollama)
   max_tokens: 4096,                // 1 – 200,000
   temperature: 0.0,                // 0.0 – 2.0
@@ -42,8 +42,12 @@ await client.llm.set({
 ```
 
 Notes:
-- Pass `api_key: null` (or omit) to preserve an existing stored key.
-- Use `client.llm.clearApiKey()` to remove a stored key without changing other settings.
+- Omit `api_key` to preserve an existing stored key; `api_key: null` clears it.
+- Anthropic configuration requires a BYOK API key. If no stored key exists,
+  omitting `api_key` uses a shared platform key only for providers and
+  configurations where that fallback is supported.
+- Use `client.llm.clearApiKey({})` to remove a stored key without changing other
+  settings. Shared-key fallback is provider-dependent; Anthropic requires BYOK.
 - When `api_key` is provided, it is encrypted at rest and never returned (only `has_api_key: true` is visible).
 - `api_base` is validated for SSRF; private IPs are rejected unless the backend explicitly allows them.
 
